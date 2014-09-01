@@ -27,12 +27,14 @@ class API(object):
         passport = Passport(username, password)
         r = self.http.post(passport.login_url, passport.form)
         if r.ok:
+            # Bind this passport to API
             self.passport = passport
             try:
                 res = r.json()
                 msg = None
                 if res['state'] is True:
-                    print res['data']['USER_ID']
+                    passport.data = res['data']
+                    passport.user_id = res['data']['USER_ID']
                 else:
                     if 'err_name' in res:
                         if res['err_name'] == 'account':
@@ -61,11 +63,15 @@ class API(object):
 class Passport(object):
     login_url = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
     logout_url = 'http://passport.115.com/?ac=logout'
+    checkpoint_url = \
+        'http://passport.115.com/?ct=ajax&ac=ajax_check_point&user_id={0}'
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
         self.form = self._form()
+        self.user_id = None
+        self.data = None
 
     def _form(self):
         vcode = self._vcode()
