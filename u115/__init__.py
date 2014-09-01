@@ -4,16 +4,39 @@ import time
 from hashlib import sha1
 import pdb
 
+USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
+
 
 class RequestHandler(object):
     def __init__(self):
         self.session = requests.Session()
+        self.session.headers['User-Agent'] = USER_AGENT
 
     def get(self, url, params=None):
-        return self.session.get(url, params=params)
+        r = self.session.get(url, params=params)
+        return self._response_parser(r)
 
     def post(self, url, data, params=None):
-        return self.session.post(url, data=data, params=params)
+        r = self.session.post(url, data=data, params=params)
+        return self._response_parser(r)
+
+    def _response_parser(self, r):
+        if r.ok:
+            try:
+                j = r.json()
+                response = Response(j.get('state'), j)
+                return response
+            except ValueError:
+                # No JSON-encoded data returned
+                raise APIError('Invalid API access.')
+        else:
+            r.raise_for_status()
+
+
+class Response(object):
+    def __init__(self, state, content):
+        self.state = state
+        self.content = content
 
 
 class API(object):
@@ -26,45 +49,40 @@ class API(object):
     def login(self, username, password):
         passport = Passport(username, password)
         r = self.http.post(passport.login_url, passport.form)
-        if r.ok:
+        # Login success
+        if r.state is True:
             # Bind this passport to API
             self.passport = passport
-            try:
-                res = r.json()
-                msg = None
-                if res['state'] is True:
-                    passport.data = res['data']
-                    passport.user_id = res['data']['USER_ID']
-                else:
-                    if 'err_name' in res:
-                        if res['err_name'] == 'account':
-                            msg = 'Account does not exist.'
-                        elif res['err_name'] == 'passwd':
-                            msg = 'Password is incorrect.'
-                    error = APIError(msg)
-                    error.content = res
-                    print res
-                    raise error
-            except ValueError:
-                print 'Login Failed.'
+            passport.data = r.content['data']
+            passport.user_id = r.content['data']['USER_ID']
         else:
-            r.raise_for_status()
+            msg = None
+            if 'err_name' in r.content:
+                if r.content['err_name'] == 'account':
+                    msg = 'Account does not exist.'
+                elif r.content['err_name'] == 'passwd':
+                    msg = 'Password is incorrect.'
+            error = APIError(msg)
+            raise error
 
     @property
     def has_logged_in(self):
-        if self.passport is not None:
-            return True
+        if self.passport is not None and self.passport.user_id is not None:
+            params = {'user_id': self.passport.user_id}
+            r = self.http.get(self.passport.checkpoint_url, params=params)
+            pdb.set_trace()
+            if r.state is False:
+                return True
         return False
 
     def logout(self):
-        self.http.get()
+        self.http.get(self.passport.logout_url)
 
 
 class Passport(object):
     login_url = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
     logout_url = 'http://passport.115.com/?ac=logout'
-    checkpoint_url = \
-        'http://passport.115.com/?ct=ajax&ac=ajax_check_point&user_id={0}'
+    checkpoint_url = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
 
     def __init__(self, username, password):
         self.username = username
