@@ -30,16 +30,18 @@ class API(object):
             self.passport = passport
             try:
                 res = r.json()
-                err = APIError()
-                msg = res.get('err_msg')
-                if msg is None:
-                    msg = res.get('message')
-                code = res.get('err_code')
-                name = res.get('err_name')
-                err.code = err
-                err.name = name
-                print msg
-                raise err
+                msg = None
+                if res['state'] is True:
+                    print res['data']['USER_ID']
+                else:
+                    if 'err_name' in res:
+                        if res['err_name'] == 'account':
+                            msg = 'Account does not exist.'
+                        elif res['err_name'] == 'passwd':
+                            msg = 'Password is incorrect.'
+                    print res
+                    print msg
+                    raise APIError(msg, res)
             except ValueError:
                 print 'Login Failed.'
         else:
@@ -90,8 +92,10 @@ class Passport(object):
     def _ssopw(self, vcode):
         p = sha1(self.password).hexdigest()
         u = sha1(self.username).hexdigest()
-        return sha1(sha1(p + u).hexdigest() + vcode).hexdigest()
+        return sha1(sha1(p + u).hexdigest() + vcode.upper()).hexdigest()
 
 
 class APIError(Exception):
-    pass
+    def __init__(self, message, content):
+        self.message = message
+        self.content = content
