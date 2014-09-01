@@ -2,6 +2,7 @@
 import requests
 import time
 from hashlib import sha1
+import pdb
 
 
 class RequestHandler(object):
@@ -14,9 +15,6 @@ class RequestHandler(object):
     def post(self, url, data, params=None):
         return self.session.post(url, data=data, params=params)
 
-    def __repr__(self):
-        return self.session
-
 
 class API(object):
     api_url = ''
@@ -27,11 +25,25 @@ class API(object):
 
     def login(self, username, password):
         passport = Passport(username, password)
-        r = self.http.post(passport.logout_url, passport.form)
+        r = self.http.post(passport.login_url, passport.form)
         if r.ok:
-            print 'Login Sucess.'
+            self.passport = passport
+            try:
+                res = r.json()
+                err = APIError()
+                msg = res.get('err_msg')
+                if msg is None:
+                    msg = res.get('message')
+                code = res.get('err_code')
+                name = res.get('err_name')
+                err.code = err
+                err.name = name
+                print msg
+                raise err
+            except ValueError:
+                print 'Login Failed.'
         else:
-            print r.json()['message']
+            r.raise_for_status()
 
     @property
     def has_logged_in(self):
@@ -79,3 +91,7 @@ class Passport(object):
         p = sha1(self.password).hexdigest()
         u = sha1(self.username).hexdigest()
         return sha1(sha1(p + u).hexdigest() + vcode).hexdigest()
+
+
+class APIError(Exception):
+    pass
