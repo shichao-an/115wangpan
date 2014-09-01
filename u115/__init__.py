@@ -39,9 +39,10 @@ class API(object):
                             msg = 'Account does not exist.'
                         elif res['err_name'] == 'passwd':
                             msg = 'Password is incorrect.'
+                    error = APIError(msg)
+                    error.content = res
                     print res
-                    print msg
-                    raise APIError(msg, res)
+                    raise error
             except ValueError:
                 print 'Login Failed.'
         else:
@@ -96,6 +97,4 @@ class Passport(object):
 
 
 class APIError(Exception):
-    def __init__(self, message, content):
-        self.message = message
-        self.content = content
+    pass
