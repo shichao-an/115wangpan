@@ -16,11 +16,11 @@ class RequestHandler(object):
 
     def get(self, url, params=None):
         r = self.session.get(url, params=params)
-        return self._response_parser(r)
+        return self._response_parser(r, expect_json=False)
 
     def post(self, url, data, params=None):
         r = self.session.post(url, data=data, params=params)
-        return self._response_parser(r)
+        return self._response_parser(r, expect_json=False)
 
     def send(self, request):
         """Send a formatted API request"""
@@ -30,15 +30,21 @@ class RequestHandler(object):
                                  data=request.data)
         return self._response_parser(r)
 
-    def _response_parser(self, r):
+    def _response_parser(self, r, expect_json=True):
+        """
+        :param r: a response object of the Requests library
+        :param expect_json: if True, raise APIError if response is not in JSON
+            format
+        """
         if r.ok:
             try:
                 j = r.json()
-                response = Response(j.get('state'), j)
-                return response
+                return Response(j.get('state'), j)
             except ValueError:
                 # No JSON-encoded data returned
-                raise APIError('Invalid API access.')
+                if expect_json:
+                    raise APIError('Invalid API access.')
+                return Response(False, r.content)
         else:
             r.raise_for_status()
 
