@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import humanize
 import requests
 import time
 from hashlib import sha1
@@ -120,23 +121,39 @@ class API(object):
         if res.state:
             return res.content['tasks']
 
-    def load_tasks(self, count, page=1, tasks=None):
+    def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
-        loaded_tasks = self._req_lixian_task_lists(page)[:count]
+        loaded_tasks = map(create_task,
+                           self._req_lixian_task_lists(page)[:count])
         if count <= self.num_tasks_per_page:
             return tasks + loaded_tasks
         else:
-            return self.load_tasks(count - 30, page + 1, loaded_tasks + tasks)
+            return self._load_tasks(count - 30, page + 1, loaded_tasks + tasks)
 
     def get_tasks(self, count=30):
-        return self.load_tasks(count)
+        return self._load_tasks(count)
 
     def upload_torrent(self, torrent):
         pass
 
 
-class Passport(object):
+class Base(object):
+    def __repr__(self):
+        try:
+            u = self.__str__()
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            u = '[Bad Unicode data]'
+        repr_type = type(u)
+        return repr_type('<%s: %s>' % (self.__class__.__name__, u))
+
+    def __str__(self):
+        if hasattr(self, '__unicode__'):
+            return unicode(self).encode('utf-8')
+        return '%s object' % self.__class__.__name__
+
+
+class Passport(Base):
     login_url = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
     logout_url = 'http://passport.115.com/?ac=logout'
     checkpoint_url = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
@@ -168,13 +185,66 @@ class Passport(object):
         s = '%.6f' % time.time()
         whole, frac = map(int, s.split('.'))
         res = '%x%x' % (whole, frac)
-        assert len(res) == 13
+        if len(res) != 13:
+            print 'Not 13'
+        #assert len(res) == 13
         return res
 
     def _ssopw(self, vcode):
         p = sha1(self.password).hexdigest()
         u = sha1(self.username).hexdigest()
         return sha1(sha1(p + u).hexdigest() + vcode.upper()).hexdigest()
+
+    def __unicode__(self):
+        return self.username
+
+
+class Task(Base):
+    def __init__(self, add_time, file_id, info_hash, last_update, left_time,
+                 move, name, peers, percent_done, rate_download, size, status):
+        """
+        :param add_time: integer to datetiem object
+        :param file_id: string
+        :param info_hash: string
+        :param last_update: integer to datetime object
+        :param left_time: integer
+        :param move: integer
+        :param name: string
+        :param peers: integer
+        :param percent_done: integer (<=100), originally named `percentDone'
+        :param rate_download: integer, originally named `rateDownload'
+        :param size: integer
+        :param status: integer
+        """
+        self.add_time = utils.get_utcdatetime(add_time)
+        self.file_id = file_id
+        self.info_hash = info_hash
+        self.last_update = utils.get_utcdatetime(last_update)
+        self.left_time = left_time
+        self.move = move
+        self.name = name
+        self.peers = peers
+        self.percent_done = percent_done
+        self.rate_download = rate_download
+        self.size = size
+        self.size_human = humanize.naturalsize(size, binary=True)
+        self.status = status
+
+    def __unicode__(self):
+        return self.name
+
+
+def create_task(kwargs):
+    """Create a Task object from raw kwargs
+
+    rateDownload => rate_download
+    percentDone => percent_done
+    """
+    kwargs['rate_download'] = kwargs['rateDownload']
+    kwargs['percent_done'] = kwargs['percentDone']
+    del kwargs['rateDownload']
+    del kwargs['percentDone']
+    return Task(**kwargs)
 
 
 class APIError(Exception):
