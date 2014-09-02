@@ -134,7 +134,20 @@ class API(object):
     def get_tasks(self, count=30):
         return self._load_tasks(count)
 
-    def create_task(self):
+    def add_task_bt(self):
+        """
+        Added a new BT task
+        TODO:
+            ac=get_id&torrent=1: get cid
+            upload?debug: upload torrent file
+            ac=torrent: torrent list
+            ac=add_task_bt: send selected files
+
+        """
+        pass
+
+    def add_task_url(self):
+        """Added a new URL task (VIP only)"""
         pass
 
     def delete_task(self):
