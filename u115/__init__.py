@@ -124,7 +124,7 @@ class API(object):
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
-        loaded_tasks = map(create_task,
+        loaded_tasks = map(instantiate_task,
                            self._req_lixian_task_lists(page)[:count])
         if count <= self.num_tasks_per_page:
             return tasks + loaded_tasks
@@ -134,7 +134,10 @@ class API(object):
     def get_tasks(self, count=30):
         return self._load_tasks(count)
 
-    def upload_torrent(self, torrent):
+    def create_task(self):
+        pass
+
+    def delete_task(self):
         pass
 
 
@@ -199,12 +202,71 @@ class Passport(Base):
         return self.username
 
 
-class Task(Base):
+def BaseFile(Base):
+    def __init__(self, cid, name):
+        """
+        :param cid: integer
+            for file: this represents the directory it belongs to;
+            for directory: this represents itself
+        :param name: string, originally named `n'
+
+        """
+        self.cid = cid
+
+
+def File(BaseFile):
+    def __init__(self, size, file_type, thumbnail, *args, **kwargs):
+        super(File, self).__init__(*args, **kwargs)
+        """
+        :param size: integer
+        :param file_type: string, originally named `ico'
+        :param thumbnail: string, URL
+        """
+        self.size = size
+        self.file_type = file_type
+        self.thumbnail = thumbnail
+
+
+def Directory(BaseFile):
+    def __init__(self, pid, *args, **kwargs):
+        super(Directory, self).__init__(*args, **kwargs)
+        """
+        :param pid: integer, represents the parent directory it belongs to
+
+        """
+        self.pid = pid
+
+    def list(self, order='user_ptime', offset=0, limit=30, asc=False):
+        """
+        Exhaustive params:
+            aid: 1
+            o: user_ptime
+            asc: 0
+            offset: 1
+            show_dir: 0
+            limit: 2
+            code:
+            scid:
+            snap: 0
+            natsort: 1
+            source:
+        Implemented params:
+        :param order: string, originally named `o'
+        :param offset: integer
+        :param limit: integer
+        :param asc: boolean
+        """
+
+
+class Task(Directory):
     def __init__(self, add_time, file_id, info_hash, last_update, left_time,
-                 move, name, peers, percent_done, rate_download, size, status):
+                 move, name, peers, percent_done, rate_download, size, status,
+                 *args, **kwargs):
+        super(Task, self).__init__(*args, **kwargs)
+
         """
         :param add_time: integer to datetiem object
-        :param file_id: string
+        :param file_id: string, equivalent to `cid' in File of directory type
         :param info_hash: string
         :param last_update: integer to datetime object
         :param left_time: integer
@@ -230,11 +292,16 @@ class Task(Base):
         self.size_human = humanize.naturalsize(size, binary=True)
         self.status = status
 
+    @property
+    def cid(self):
+        """Children ID"""
+        return self.file_id
+
     def __unicode__(self):
         return self.name
 
 
-def create_task(kwargs):
+def instantiate_task(kwargs):
     """Create a Task object from raw kwargs
 
     rateDownload => rate_download
