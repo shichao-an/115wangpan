@@ -282,7 +282,7 @@ class Task(Directory):
     def __init__(self, add_time, file_id, info_hash, last_update, left_time,
                  move, name, peers, percent_done, rate_download, size, status,
                  cid, pid):
-        super(Task, self).__init__(name, cid, pid)
+        super(Task, self).__init__(cid, name, pid)
 
         """
         :param add_time: integer to datetiem object
