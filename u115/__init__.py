@@ -251,10 +251,10 @@ def Directory(BaseFile):
             natsort: 1
             source:
         Implemented params:
-        :param order: string, originally named `o'
-        :param offset: integer
-        :param limit: integer
-        :param asc: boolean
+            :param order: string, originally named `o'
+            :param offset: integer
+            :param limit: integer
+            :param asc: boolean
         """
 
 
