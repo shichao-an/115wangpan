@@ -3,7 +3,7 @@ import humanize
 import requests
 import time
 from hashlib import sha1
-#import pdb
+import pdb
 import utils
 
 USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
@@ -225,11 +225,12 @@ class BaseFile(Base):
 
         """
         self.cid = cid
+        self.name = name
 
 
 class File(BaseFile):
-    def __init__(self, size, file_type, thumbnail, *args, **kwargs):
-        super(File, self).__init__(*args, **kwargs)
+    def __init__(self, cid, name, size, file_type, thumbnail):
+        super(File, self).__init__(cid, name)
         """
         :param size: integer
         :param file_type: string, originally named `ico'
@@ -241,8 +242,8 @@ class File(BaseFile):
 
 
 class Directory(BaseFile):
-    def __init__(self, pid, *args, **kwargs):
-        super(Directory, self).__init__(*args, **kwargs)
+    def __init__(self, cid, name, pid):
+        super(Directory, self).__init__(cid, name)
         """
         :param pid: integer, represents the parent directory it belongs to
 
@@ -274,8 +275,8 @@ class Directory(BaseFile):
 class Task(Directory):
     def __init__(self, add_time, file_id, info_hash, last_update, left_time,
                  move, name, peers, percent_done, rate_download, size, status,
-                 *args, **kwargs):
-        super(Task, self).__init__(*args, **kwargs)
+                 cid, pid):
+        super(Task, self).__init__(name, cid, pid)
 
         """
         :param add_time: integer to datetiem object
@@ -297,7 +298,6 @@ class Task(Directory):
         self.last_update = utils.get_utcdatetime(last_update)
         self.left_time = left_time
         self.move = move
-        self.name = name
         self.peers = peers
         self.percent_done = percent_done
         self.rate_download = rate_download
@@ -318,6 +318,7 @@ def instantiate_task(kwargs):
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['cid'] = kwargs['file_id']
+    kwargs['pid'] = None
     del kwargs['rateDownload']
     del kwargs['percentDone']
     return Task(**kwargs)
