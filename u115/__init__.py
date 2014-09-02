@@ -240,7 +240,7 @@ class File(BaseFile):
         self.thumbnail = thumbnail
 
 
-def Directory(BaseFile):
+class Directory(BaseFile):
     def __init__(self, pid, *args, **kwargs):
         super(Directory, self).__init__(*args, **kwargs)
         """
