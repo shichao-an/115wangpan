@@ -215,7 +215,7 @@ class Passport(Base):
         return self.username
 
 
-def BaseFile(Base):
+class BaseFile(Base):
     def __init__(self, cid, name):
         """
         :param cid: integer
@@ -227,7 +227,7 @@ def BaseFile(Base):
         self.cid = cid
 
 
-def File(BaseFile):
+class File(BaseFile):
     def __init__(self, size, file_type, thumbnail, *args, **kwargs):
         super(File, self).__init__(*args, **kwargs)
         """
@@ -305,11 +305,6 @@ class Task(Directory):
         self.size_human = humanize.naturalsize(size, binary=True)
         self.status = status
 
-    @property
-    def cid(self):
-        """Children ID"""
-        return self.file_id
-
     def __unicode__(self):
         return self.name
 
@@ -322,6 +317,7 @@ def instantiate_task(kwargs):
     """
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
+    kwargs['cid'] = kwargs['file_id']
     del kwargs['rateDownload']
     del kwargs['percentDone']
     return Task(**kwargs)
