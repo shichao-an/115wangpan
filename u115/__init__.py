@@ -2,7 +2,7 @@
 import requests
 import time
 from hashlib import sha1
-import pdb
+#import pdb
 import utils
 
 USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
@@ -23,8 +23,8 @@ class RequestHandler(object):
 
     def send(self, request):
         """Send a formatted API request"""
-        r = self.session.request(request.method,
-                                 request.url,
+        r = self.session.request(method=request.method,
+                                 url=request.url,
                                  params=request.params,
                                  data=request.data)
         return self._response_parser(r)
@@ -58,7 +58,7 @@ class Response(object):
 
 
 class API(object):
-    api_url = ''
+    num_tasks_per_page = 30
 
     def __init__(self):
         self.passport = None
@@ -95,8 +95,8 @@ class API(object):
     def logout(self):
         self.http.get(self.passport.logout_url)
 
-    def _offline_space(self):
-        """Fetch signature required for accessing Lixian tasks"""
+    def _req_offline_space(self):
+        """Required before accessing lixian tasks"""
         url = 'http://115.com/'
         params = {'ct': 'offline', 'ac': 'space', '_': utils.get_timestamp(13)}
         req = Request(url=url, params=params)
@@ -104,21 +104,33 @@ class API(object):
         if r.state:
             self.signatures['offline_space'] = r.content['sign']
 
-    def get_lixian_task_lists(self, page=1):
-        """Requires signature"""
+    def _req_lixian_task_lists(self, page=1):
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'task_lists'}
         if 'offline_space' not in self.signatures:
-            self._offline_space()
+            self._req_offline_space()
         data = {
-            'page': str(page),
+            'page': page,
             'uid': self.passport.user_id,
             'sign': self.signatures['offline_space'],
             'time': utils.get_timestamp(10),
         }
-        req = Request(url=url, params=params, data=data, method='POST')
+        req = Request(method='POST', url=url, params=params, data=data)
         res = self.http.send(req)
-        return res
+        if res.state:
+            return res.content['tasks']
+
+    def load_tasks(self, count, page=1, tasks=None):
+        if tasks is None:
+            tasks = []
+        loaded_tasks = self._req_lixian_task_lists(page)[:count]
+        if count <= self.num_tasks_per_page:
+            return tasks + loaded_tasks
+        else:
+            return self.load_tasks(count - 30, page + 1, loaded_tasks + tasks)
+
+    def get_tasks(self, count=30):
+        return self.load_tasks(count)
 
     def upload_torrent(self, torrent):
         pass
