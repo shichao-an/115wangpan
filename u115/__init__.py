@@ -25,7 +25,8 @@ class RequestHandler(object):
         """Send a formatted API request"""
         r = self.session.request(request.method,
                                  request.url,
-                                 params=request.params)
+                                 params=request.params,
+                                 data=request.data)
         return self._response_parser(r)
 
     def _response_parser(self, r):
@@ -87,7 +88,6 @@ class API(object):
         if self.passport is not None and self.passport.user_id is not None:
             params = {'user_id': self.passport.user_id}
             r = self.http.get(self.passport.checkpoint_url, params=params)
-            pdb.set_trace()
             if r.state is False:
                 return True
         return False
@@ -112,7 +112,7 @@ class API(object):
             self._offline_space()
         data = {
             'page': str(page),
-            'uid': self.user_id,
+            'uid': self.passport.user_id,
             'sign': self.signatures['offline_space'],
             'time': utils.get_timestamp(10),
         }
