@@ -43,10 +43,11 @@ class RequestHandler(object):
 
 class Request(object):
     """Formatted API request class"""
-    def __init__(self, url, method='GET', params=None):
+    def __init__(self, url, method='GET', params=None, data=None):
         self.url = url
         self.method = method
         self.params = params
+        self.data = data
 
 
 class Response(object):
@@ -82,7 +83,6 @@ class API(object):
             error = APIError(msg)
             raise error
 
-    @property
     def has_logged_in(self):
         if self.passport is not None and self.passport.user_id is not None:
             params = {'user_id': self.passport.user_id}
@@ -94,6 +94,34 @@ class API(object):
 
     def logout(self):
         self.http.get(self.passport.logout_url)
+
+    def _offline_space(self):
+        """Fetch signature required for accessing Lixian tasks"""
+        url = 'http://115.com/'
+        params = {'ct': 'offline', 'ac': 'space', '_': utils.get_timestamp(13)}
+        req = Request(url=url, params=params)
+        r = self.http.send(req)
+        if r.state:
+            self.signatures['offline_space'] = r.content['sign']
+
+    def get_lixian_task_lists(self, page=1):
+        """Requires signature"""
+        url = 'http://115.com/lixian/'
+        params = {'ct': 'lixian', 'ac': 'task_lists'}
+        if 'offline_space' not in self.signatures:
+            self._offline_space()
+        data = {
+            'page': str(page),
+            'uid': self.user_id,
+            'sign': self.signatures['offline_space'],
+            'time': utils.get_timestamp(10),
+        }
+        req = Request(url=url, params=params, data=data, method='POST')
+        res = self.http.send(req)
+        return res
+
+    def upload_torrent(self, torrent):
+        pass
 
 
 class Passport(object):
