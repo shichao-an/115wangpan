@@ -3,6 +3,7 @@ import requests
 import time
 from hashlib import sha1
 import pdb
+import utils
 
 USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
 
@@ -20,6 +21,13 @@ class RequestHandler(object):
         r = self.session.post(url, data=data, params=params)
         return self._response_parser(r)
 
+    def send(self, request):
+        """Send a formatted API request"""
+        r = self.session.request(request.method,
+                                 request.url,
+                                 params=request.params)
+        return self._response_parser(r)
+
     def _response_parser(self, r):
         if r.ok:
             try:
@@ -31,6 +39,14 @@ class RequestHandler(object):
                 raise APIError('Invalid API access.')
         else:
             r.raise_for_status()
+
+
+class Request(object):
+    """Formatted API request class"""
+    def __init__(self, url, method='GET', params=None):
+        self.url = url
+        self.method = method
+        self.params = params
 
 
 class Response(object):
@@ -45,6 +61,7 @@ class API(object):
     def __init__(self):
         self.passport = None
         self.http = RequestHandler()
+        self.signatures = {}
 
     def login(self, username, password):
         passport = Passport(username, password)
