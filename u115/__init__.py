@@ -7,7 +7,6 @@ from hashlib import sha1
 import utils
 
 USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
-REQUEST_HANDLER = None  # Global request handler
 
 
 class RequestHandler(object):
@@ -72,10 +71,7 @@ class API(object):
 
     def __init__(self):
         self.passport = None
-        if REQUEST_HANDLER is None:
-            self.http = RequestHandler()
-        else:
-            self.http = REQUEST_HANDLER
+        self.http = RequestHandler()
         self.signatures = {}
         self._downloads_directory = None
         self._torrents_directory = None
