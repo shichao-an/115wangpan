@@ -192,6 +192,7 @@ class API(object):
             self._load_lixian_space()
         return self._downloads_directory
 
+    @property
     def torrents_directory(self):
         if self._torrents_directory is None:
             self._load_lixian_space()
