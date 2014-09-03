@@ -44,6 +44,7 @@ class RequestHandler(object):
             except ValueError:
                 # No JSON-encoded data returned
                 if expect_json:
+                    print r.content
                     raise APIError('Invalid API access.')
                 return Response(False, r.content)
         else:
@@ -143,7 +144,7 @@ class API(object):
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
-        return res['cid']
+        return res.content['cid']
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=0, code=None, scid=None, snap=0, natsort=None,
@@ -153,6 +154,15 @@ class API(object):
         req = Request(method='GET', url=self.web_api_url, params=params)
         res = self.http.send(req)
         return res
+
+    def _req_directory(self, cid):
+        """Return name and pid of by cid"""
+        res = self._req_files(cid=cid, offset=0, limit=1)
+        if res.state:
+            path = res.content['path']
+            for d in path:
+                if d['cid'] == cid:
+                    return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
 
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
@@ -166,18 +176,9 @@ class API(object):
         else:
             return self._load_tasks(count - 30, page + 1, loaded_tasks + tasks)
 
-    def _req_directory(self, cid):
-        """Return name and pid of by cid"""
-        res = self._req_files(self, cid=cid, offset=0, limit=1)
-        if res.state:
-            path = res['path']
-            for d in path:
-                if d['cid'] == cid:
-                    return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
-
     def _load_directory(self, cid):
         kwargs = self._req_directory(cid)
-        return Directory(api=self.api, **kwargs)
+        return Directory(api=self, **kwargs)
 
     @property
     def lixian_space(self):
@@ -301,6 +302,9 @@ class File(BaseFile):
         self.size = size
         self.file_type = file_type
         self.thumbnail = thumbnail
+
+    def __unicode__(self):
+        return self.name
 
 
 class Directory(BaseFile):
