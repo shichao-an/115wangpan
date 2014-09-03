@@ -299,6 +299,9 @@ class BaseFile(Base):
         self.cid = cid
         self.name = name
 
+    def __unicode__(self):
+        return self.name
+
 
 class File(BaseFile):
     def __init__(self, api, cid, name, size, file_type, thumbnail):
@@ -311,9 +314,6 @@ class File(BaseFile):
         self.size = size
         self.file_type = file_type
         self.thumbnail = thumbnail
-
-    def __unicode__(self):
-        return self.name
 
 
 class Directory(BaseFile):
@@ -328,11 +328,9 @@ class Directory(BaseFile):
 
     @property
     def parent(self):
-        """
-        :param lazy: boolean, if False, reload by hitting the API
-        """
         if self._parent is None:
-            self._parent = self.api._load_directory(self.pid)
+            if self.pid is not None:
+                self._parent = self.api._load_directory(self.pid)
         return self._parent
 
     def reload(self):
@@ -413,10 +411,17 @@ def _instantiate_task(api, kwargs):
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['cid'] = kwargs['file_id']
-    kwargs['pid'] = None
+    is_transferred = kwargs['status'] == 2
+    if is_transferred:
+        kwargs['pid'] = api.downloads_directory.cid
+    else:
+        kwargs['pid'] = None
     del kwargs['rateDownload']
     del kwargs['percentDone']
-    return Task(api, **kwargs)
+    task = Task(api, **kwargs)
+    if is_transferred:
+        task._parent = api.downloads_directory
+    return task
 
 
 class APIError(Exception):
