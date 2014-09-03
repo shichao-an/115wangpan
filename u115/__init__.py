@@ -267,9 +267,6 @@ class Passport(Base):
         s = '%.6f' % time.time()
         whole, frac = map(int, s.split('.'))
         res = '%.8x%.5x' % (whole, frac)
-        if len(res) != 13:
-            print 'Not 13'
-        #assert len(res) == 13
         return res
 
     def _ssopw(self, vcode):
