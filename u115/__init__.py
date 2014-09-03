@@ -7,6 +7,7 @@ from hashlib import sha1
 import utils
 
 USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
+REQUEST_HANDLER = None  # Global request handler
 
 
 class RequestHandler(object):
@@ -70,7 +71,10 @@ class API(object):
 
     def __init__(self):
         self.passport = None
-        self.http = RequestHandler()
+        if REQUEST_HANDLER is None:
+            self.http = RequestHandler()
+        else:
+            self.http = REQUEST_HANDLER
         self.signatures = {}
         self._lixian_space = None  # Directory object
 
@@ -153,45 +157,23 @@ class API(object):
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
-        loaded_tasks = map(_instantiate_task,
-                           self._req_lixian_task_lists(page)[:count])
+        loaded_tasks = [
+            _instantiate_task(self, t) for t in
+            self._req_lixian_task_lists(page)[:count]
+        ]
         if count <= self.num_tasks_per_page:
             return tasks + loaded_tasks
         else:
             return self._load_tasks(count - 30, page + 1, loaded_tasks + tasks)
 
-    def _load_directory(self, cid):
+    def _req_directory(self, cid):
+        """Return name and pid of by cid"""
         res = self._req_files(self, cid=cid, offset=0, limit=1)
         if res.state:
             path = res['path']
             for d in path:
                 if d['cid'] == cid:
-                    return Directory(cid, d['name'], d['pid'])
-
-    def list_directory(self, directory, order='user_ptime', offset=0,
-                       limit=30, asc=False):
-        """
-        Required params:
-            :param directory: a Directory object to be listed
-        Exhaustive optional params:
-            aid: 1
-            o: user_ptime
-            asc: 0
-            offset: 1
-            show_dir: 0
-            limit: 2
-            code:
-            scid:
-            snap: 0
-            natsort: 1
-            source:
-        Implemented optional params:
-            :param order: string, originally named `o'
-            :param offset: integer
-            :param limit: integer
-            :param asc: boolean
-        Return a list of File or Directory objects
-        """
+                    return {'name': d['name'], 'pid': d['pid']}
 
     @property
     def lixian_space(self):
@@ -290,21 +272,23 @@ class Passport(Base):
 
 
 class BaseFile(Base):
-    def __init__(self, cid, name):
+    def __init__(self, api, cid, name):
         """
+        :param api: associated API object
         :param cid: integer
             for file: this represents the directory it belongs to;
             for directory: this represents itself
         :param name: string, originally named `n'
 
         """
+        self.api = api
         self.cid = cid
         self.name = name
 
 
 class File(BaseFile):
-    def __init__(self, cid, name, size, file_type, thumbnail):
-        super(File, self).__init__(cid, name)
+    def __init__(self, api, cid, name, size, file_type, thumbnail):
+        super(File, self).__init__(api, cid, name)
         """
         :param size: integer
         :param file_type: string, originally named `ico'
@@ -316,20 +300,62 @@ class File(BaseFile):
 
 
 class Directory(BaseFile):
-    def __init__(self, cid, name, pid):
-        super(Directory, self).__init__(cid, name)
+    def __init__(self, api, cid, name, pid):
+        super(Directory, self).__init__(api, cid, name)
         """
         :param pid: integer, represents the parent directory it belongs to
 
         """
         self.pid = pid
+        self._parent = None
+
+    @property
+    def parent(self):
+        """
+        :param lazy: boolean, if False, reload by hitting the API
+        """
+        if self._parent is None:
+            r = self.api._req_directory(self.pid)
+            self._parent = Directory(self.api, self.pid, r['name'], r['pid'])
+        return self._parent
+
+    def reload(self):
+        """Reload directory info (name and pid)"""
+        r = self.api._req_directory(self.cid)
+        self.pid = r['pid']
+        self.name = r['name']
+
+    def list(self, cid, order='user_ptime', offset=0,
+             limit=30, asc=False):
+        """
+        Required params:
+            :param directory: a Directory object to be listed
+        Exhaustive optional params:
+            aid: 1
+            o: user_ptime
+            asc: 0
+            offset: 1
+            show_dir: 0
+            limit: 2
+            code:
+            scid:
+            snap: 0
+            natsort: 1
+            source:
+        Implemented optional params:
+            :param order: string, originally named `o'
+            :param offset: integer
+            :param limit: integer
+            :param asc: boolean
+        Return a list of File or Directory objects
+        """
 
 
 class Task(Directory):
-    def __init__(self, add_time, file_id, info_hash, last_update, left_time,
-                 move, name, peers, percent_done, rate_download, size, status,
-                 cid, pid):
-        super(Task, self).__init__(cid, name, pid)
+    def __init__(self, api, add_time, file_id, info_hash, last_update,
+                 left_time, move, name, peers, percent_done, rate_download,
+                 size, status, cid, pid):
+        super(Task, self).__init__(api, cid, name, pid)
 
         """
         :param add_time: integer to datetiem object
@@ -362,7 +388,7 @@ class Task(Directory):
         return self.name
 
 
-def _instantiate_task(kwargs):
+def _instantiate_task(api, kwargs):
     """Create a Task object from raw kwargs
 
     rateDownload => rate_download
@@ -374,7 +400,7 @@ def _instantiate_task(kwargs):
     kwargs['pid'] = None
     del kwargs['rateDownload']
     del kwargs['percentDone']
-    return Task(**kwargs)
+    return Task(api, **kwargs)
 
 
 class APIError(Exception):
