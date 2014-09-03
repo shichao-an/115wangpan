@@ -173,7 +173,11 @@ class API(object):
             path = res['path']
             for d in path:
                 if d['cid'] == cid:
-                    return {'name': d['name'], 'pid': d['pid']}
+                    return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
+
+    def _load_directory(self, cid):
+        kwargs = self._req_directory(cid)
+        return Directory(api=self.api, **kwargs)
 
     @property
     def lixian_space(self):
@@ -315,8 +319,7 @@ class Directory(BaseFile):
         :param lazy: boolean, if False, reload by hitting the API
         """
         if self._parent is None:
-            r = self.api._req_directory(self.pid)
-            self._parent = Directory(self.api, self.pid, r['name'], r['pid'])
+            self._parent = self.api._load_directory(self.pid)
         return self._parent
 
     def reload(self):
