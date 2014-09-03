@@ -3,7 +3,7 @@ import humanize
 import requests
 import time
 from hashlib import sha1
-import pdb
+#import pdb
 import utils
 
 USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
@@ -66,11 +66,13 @@ class Response(object):
 
 class API(object):
     num_tasks_per_page = 30
+    web_api_url = 'http://web.api.115.com/files'
 
     def __init__(self):
         self.passport = None
         self.http = RequestHandler()
         self.signatures = {}
+        self._lixian_space = None  # Directory object
 
     def login(self, username, password):
         passport = Passport(username, password)
@@ -127,15 +129,81 @@ class API(object):
         if res.state:
             return res.content['tasks']
 
+    def _req_lixian_get_id(self):
+        """Get `cid' of lixian space directory"""
+        url = 'http://115.com/lixian/'
+        params = {
+            'ct': 'lixian',
+            'ac': 'get_id',
+            '_': utils.get_utcdatetime(13)
+        }
+        req = Request(method='GET', url=url, params=params)
+        res = self.http.send(req)
+        return res['cid']
+
+    def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
+                   show_dir=0, code=None, scid=None, snap=0, natsort=None,
+                   source=None):
+        params = locals()
+        del params['self']
+        req = Request(method='GET', url=self.web_api_url, params=params)
+        res = self.http.send(req)
+        return res
+
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
-        loaded_tasks = map(instantiate_task,
+        loaded_tasks = map(_instantiate_task,
                            self._req_lixian_task_lists(page)[:count])
         if count <= self.num_tasks_per_page:
             return tasks + loaded_tasks
         else:
             return self._load_tasks(count - 30, page + 1, loaded_tasks + tasks)
+
+    def _load_directory(self, cid):
+        res = self._req_files(self, cid=cid, offset=0, limit=1)
+        if res.state:
+            path = res['path']
+            for d in path:
+                if d['cid'] == cid:
+                    return Directory(cid, d['name'], d['pid'])
+
+    def list_directory(self, directory, order='user_ptime', offset=0,
+                       limit=30, asc=False):
+        """
+        Required params:
+            :param directory: a Directory object to be listed
+        Exhaustive optional params:
+            aid: 1
+            o: user_ptime
+            asc: 0
+            offset: 1
+            show_dir: 0
+            limit: 2
+            code:
+            scid:
+            snap: 0
+            natsort: 1
+            source:
+        Implemented optional params:
+            :param order: string, originally named `o'
+            :param offset: integer
+            :param limit: integer
+            :param asc: boolean
+        Return a list of File or Directory objects
+        """
+
+    @property
+    def lixian_space(self):
+        if self._lixian_space is None:
+            self._lixian_space = self._load_lixian_space()
+        return self._lixian_space
+
+    def _load_lixian_space(self):
+        """Return a Directory object, which is the lixian downloads
+        directory"""
+        cid = self._req_lixian_get_id()
+        return self._load_directory(cid)
 
     def get_tasks(self, count=30):
         return self._load_tasks(count)
@@ -206,7 +274,7 @@ class Passport(Base):
     def _vcode(self):
         s = '%.6f' % time.time()
         whole, frac = map(int, s.split('.'))
-        res = '%x%x' % (whole, frac)
+        res = '%.8x%.5x' % (whole, frac)
         if len(res) != 13:
             print 'Not 13'
         #assert len(res) == 13
@@ -256,27 +324,6 @@ class Directory(BaseFile):
         """
         self.pid = pid
 
-    def list(self, order='user_ptime', offset=0, limit=30, asc=False):
-        """
-        Exhaustive params:
-            aid: 1
-            o: user_ptime
-            asc: 0
-            offset: 1
-            show_dir: 0
-            limit: 2
-            code:
-            scid:
-            snap: 0
-            natsort: 1
-            source:
-        Implemented params:
-            :param order: string, originally named `o'
-            :param offset: integer
-            :param limit: integer
-            :param asc: boolean
-        """
-
 
 class Task(Directory):
     def __init__(self, add_time, file_id, info_hash, last_update, left_time,
@@ -315,7 +362,7 @@ class Task(Directory):
         return self.name
 
 
-def instantiate_task(kwargs):
+def _instantiate_task(kwargs):
     """Create a Task object from raw kwargs
 
     rateDownload => rate_download
