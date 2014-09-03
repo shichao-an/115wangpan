@@ -77,7 +77,8 @@ class API(object):
         else:
             self.http = REQUEST_HANDLER
         self.signatures = {}
-        self._lixian_space = None  # Directory object
+        self._downloads_directory = None
+        self._torrents_directory = None
 
     def login(self, username, password):
         passport = Passport(username, password)
@@ -144,7 +145,8 @@ class API(object):
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
-        return res.content['cid']
+        # res.content should include cid (torrent) and dest_cid (dl)
+        return res
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=0, code=None, scid=None, snap=0, natsort=None,
@@ -180,17 +182,24 @@ class API(object):
         kwargs = self._req_directory(cid)
         return Directory(api=self, **kwargs)
 
-    @property
-    def lixian_space(self):
-        if self._lixian_space is None:
-            self._lixian_space = self._load_lixian_space()
-        return self._lixian_space
-
     def _load_lixian_space(self):
-        """Return a Directory object, which is the lixian downloads
-        directory"""
-        cid = self._req_lixian_get_id()
-        return self._load_directory(cid)
+        """Load downloads and torrents directory"""
+        res = self._req_lixian_get_id()
+        cid = res.content['cid']
+        dest_cid = res.content['dest_cid']
+        self._downloads_directory = self._load_directory(dest_cid)
+        self._torrents_directory = self._load_directory(cid)
+
+    @property
+    def downloads_directory(self):
+        if self._downloads_directory is None:
+            self._load_lixian_space()
+        return self._downloads_directory
+
+    def torrents_directory(self):
+        if self._torrents_directory is None:
+            self._load_lixian_space()
+        return self._torrents_directory
 
     def get_tasks(self, count=30):
         return self._load_tasks(count)
