@@ -183,7 +183,7 @@ class API(object):
     def _req_files_download_url(self, pickcode):
         url = self.web_api_url + '/download'
         params = {'pickcode': pickcode, '_': utils.get_timestamp(13)}
-        req = Request(method='POST', url=url, params=params)
+        req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
         if res.state:
             return res.content['file_url']
@@ -409,7 +409,7 @@ class Directory(BaseFile):
         self.pid = pid
         if date_created is not None:
             self.date_created = utils.get_utcdatetime(date_created)
-        self.pickcode = kwargs['']
+        self.pickcode = pickcode
         self._parent = None
 
     @property
@@ -563,7 +563,6 @@ def _instantiate_file(api, kwargs):
     t => date_created
     n => name
     """
-    print kwargs
     kwargs['file_type'] = kwargs['ico']
     kwargs['date_created'] = kwargs['t']
     kwargs['pickcode'] = kwargs['pc']
