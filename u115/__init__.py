@@ -180,6 +180,14 @@ class API(object):
                 if str(d['cid']) == cid:
                     return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
 
+    def _req_files_download_url(self, pickcode):
+        url = self.web_api_url + '/download'
+        params = {'pickcode': pickcode, '_': utils.get_timestamp(13)}
+        req = Request(method='POST', url=url, params=params)
+        res = self.http.send(req)
+        if res.state:
+            return res.content['file_url']
+
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
@@ -322,7 +330,7 @@ class BaseFile(Base):
 
 class File(BaseFile):
     def __init__(self, api, fid, cid, name, size, file_type, sha,
-                 date_created, thumbnail, *args, **kwargs):
+                 date_created, thumbnail, pickcode, *args, **kwargs):
         super(File, self).__init__(api, cid, name)
         """
         Implemented parameters:
@@ -331,8 +339,10 @@ class File(BaseFile):
             :param size: integer, size in bytes
             :param file_type: string, originally named `ico'
             :param sha: string, sha1 hash
-            :param date_created: string, in "%Y-%m-%d %H:%M:%S" format
-            :param thumbnail: string, URL
+            :param date_created: string, in "%Y-%m-%d %H:%M:%S" format,
+                originally named `t'
+            :param thumbnail: string for URL, originally named `u'
+            :param pickcode: string, originally named `pc'
 
         Exhaustive original parameters:
             "aid": 1,
@@ -367,7 +377,9 @@ class File(BaseFile):
         self.sha = sha
         self.date_created = utils.string_to_datetime(date_created)
         self.thumbnail = thumbnail
+        self.pickcode = pickcode
         self._directory = None
+        self._download_url = None
 
     @property
     def directory(self):
@@ -375,21 +387,29 @@ class File(BaseFile):
             self._directory = self.api._load_directory(self.cid)
         return self._directory
 
+    def get_download_url(self):
+        if self._download_url is None:
+            self._download_url = \
+                self.api._req_files_download_url(self.pickcode)
+        return self._download_url
+
 
 class Directory(BaseFile):
     max_num_entries_per_load = 30
 
-    def __init__(self, api, cid, name, pid, date_created=None,
+    def __init__(self, api, cid, name, pid, date_created=None, pickcode=None,
                  *args, **kwargs):
         super(Directory, self).__init__(api, cid, name)
         """
         :param pid: integer, represents the parent directory it belongs to
         :param date_created: integer, originally named `t'
+        :param pickcode: string, originally named `pc'
 
         """
         self.pid = pid
         if date_created is not None:
             self.date_created = utils.get_utcdatetime(date_created)
+        self.pickcode = kwargs['']
         self._parent = None
 
     @property
@@ -546,6 +566,7 @@ def _instantiate_file(api, kwargs):
     print kwargs
     kwargs['file_type'] = kwargs['ico']
     kwargs['date_created'] = kwargs['t']
+    kwargs['pickcode'] = kwargs['pc']
     kwargs['name'] = kwargs['n']
     kwargs['thumbnail'] = kwargs['u']
     kwargs['size'] = kwargs['s']
@@ -560,6 +581,7 @@ def _instantiate_directory(api, kwargs):
     """
     kwargs['name'] = kwargs['n']
     kwargs['date_created'] = kwargs['t']
+    kwargs['pickcode'] = kwargs.get('pc')
     return Directory(api, **kwargs)
 
 
