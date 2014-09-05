@@ -6,7 +6,8 @@ from hashlib import sha1
 #import pdb
 import utils
 
-USER_AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)'
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) \
+AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
 
 
 class RequestHandler(object):
@@ -81,6 +82,7 @@ class API(object):
         self.passport = None
         self.http = RequestHandler()
         self.signatures = {}
+        self._lixian_timestamp = None
         self._downloads_directory = None
         self._torrents_directory = None
 
@@ -120,11 +122,16 @@ class API(object):
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
         url = 'http://115.com/'
-        params = {'ct': 'offline', 'ac': 'space', '_': utils.get_timestamp(13)}
+        params = {
+            'ct': 'offline',
+            'ac': 'space',
+            '_': utils.get_timestamp(13)
+        }
         req = Request(url=url, params=params)
         r = self.http.send(req)
         if r.state:
             self.signatures['offline_space'] = r.content['sign']
+            self._lixian_timestamp = r.content['time']
 
     def _req_lixian_task_lists(self, page=1):
         url = 'http://115.com/lixian/'
@@ -135,7 +142,7 @@ class API(object):
             'page': page,
             'uid': self.passport.user_id,
             'sign': self.signatures['offline_space'],
-            'time': utils.get_timestamp(10),
+            'time': self._lixian_timestamp,
         }
         req = Request(method='POST', url=url, params=params, data=data)
         res = self.http.send(req)
@@ -184,7 +191,7 @@ class API(object):
             return tasks + loaded_tasks
         else:
             return self._load_tasks(count - self.num_tasks_per_page,
-                                    page + 1, loaded_tasks + tasks)
+                                    page + 1, tasks + loaded_tasks)
 
     def _load_directory(self, cid):
         kwargs = self._req_directory(cid)
@@ -353,24 +360,35 @@ class File(BaseFile):
             "http://static.115.com/video/A1915585290B9DDE0AE86A632C4B38E38C2C8FB.jpg",
             "uid": 334902641
         """
+        self.fid = fid
         self.size = size
         self.size_human = humanize.naturalsize(size, binary=True)
         self.file_type = file_type
         self.sha = sha
         self.date_created = utils.string_to_datetime(date_created)
         self.thumbnail = thumbnail
+        self._directory = None
+
+    @property
+    def directory(self):
+        if self._directory is None:
+            self._directory = self.api._load_directory(self.cid)
+        return self._directory
 
 
 class Directory(BaseFile):
     max_num_entries_per_load = 30
 
-    def __init__(self, api, cid, name, pid):
+    def __init__(self, api, cid, name, pid, date_created=None):
         super(Directory, self).__init__(api, cid, name)
         """
         :param pid: integer, represents the parent directory it belongs to
+        :param date_created: integer, originally named `t'
 
         """
         self.pid = pid
+        if date_created is not None:
+            self.date_created = utils.get_utcdatetime(date_created)
         self._parent = None
 
     @property
@@ -439,8 +457,8 @@ class Directory(BaseFile):
         if res.state:
             entries = res.content['data']
             entries = [
-                Directory(self.api, **entry) if 'pid' in entry
-                else File(self.api, **entry) for entry in entries
+                _instantiate_directory(self.api, **entry) if 'pid' in entry
+                else _instantiate_file(self.api, **entry) for entry in entries
             ]
             return entries
 
@@ -508,10 +526,22 @@ def _instantiate_file(api, kwargs):
     """
     ico => file_type
     t => date_created
+    n => name
     """
     kwargs['file_type'] = kwargs['ico']
     kwargs['date_created'] = kwargs['t']
+    kwargs['name'] = kwargs['n']
     return File(api, **kwargs)
+
+
+def _instantiate_directory(api, kwargs):
+    """
+    n => name
+    t => date_created
+    """
+    kwargs['name'] = kwargs['n']
+    kwargs['date_created'] = kwargs['t']
+    return Directory(api, **kwargs)
 
 
 class APIError(Exception):
