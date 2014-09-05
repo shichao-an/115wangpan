@@ -27,6 +27,11 @@ Usage
     1.6 GiB
     >>> files = task.list()
     >>> files
-    [[<File: 第8局 修行.mkv>]
-    >>> files[0].get_download_url()
+    [<File: 第8局 修行.mkv>]
+    >>> f = files[0]
+    >>> f.get_download_url()
     u'http://cdnuni.115.com/some-very-long-url.mkv'
+    >>> f.directory
+    <Directory: 咲-Saki- 阿知賀編 episode of side-A>
+    >>> f.directory.parent
+    <Directory: 离线下载>
