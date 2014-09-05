@@ -85,6 +85,7 @@ class API(object):
             self.passport = passport
             passport.data = r.content['data']
             passport.user_id = r.content['data']['USER_ID']
+            passport.status = 'LOGGED_IN'
         else:
             msg = None
             if 'err_name' in r.content:
@@ -92,6 +93,7 @@ class API(object):
                     msg = 'Account does not exist.'
                 elif r.content['err_name'] == 'passwd':
                     msg = 'Password is incorrect.'
+            passport.status = 'FAILED'
             error = APIError(msg)
             raise error
 
@@ -105,6 +107,7 @@ class API(object):
 
     def logout(self):
         self.http.get(self.passport.logout_url)
+        self.passport.status = 'LOGGED_OUT'
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
@@ -247,6 +250,7 @@ class Passport(Base):
         self.form = self._form()
         self.user_id = None
         self.data = None
+        self.status = 'NEW'
 
     def _form(self):
         vcode = self._vcode()
