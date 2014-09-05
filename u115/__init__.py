@@ -66,6 +66,14 @@ class Response(object):
 
 
 class API(object):
+    """
+    Request and response interface
+
+    Functions:
+        _req_*: send raw requests
+        _load_*: usually wrapper of raw requests
+    """
+
     num_tasks_per_page = 30
     web_api_url = 'http://web.api.115.com/files'
 
@@ -162,7 +170,7 @@ class API(object):
         if res.state:
             path = res.content['path']
             for d in path:
-                if d['cid'] == cid:
+                if str(d['cid']) == cid:
                     return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
 
     def _load_tasks(self, count, page=1, tasks=None):
@@ -179,7 +187,8 @@ class API(object):
 
     def _load_directory(self, cid):
         kwargs = self._req_directory(cid)
-        return Directory(api=self, **kwargs)
+        if str(kwargs['pid']) != str(cid):
+            return Directory(api=self, **kwargs)
 
     def _load_lixian_space(self):
         """Load downloads and torrents directory"""
