@@ -499,6 +499,18 @@ class Task(Directory):
         self.size_human = humanize.naturalsize(size, binary=True)
         self.status = status
 
+    def is_transferred(self):
+        return self.move == 1
+
+    @property
+    def status_human(self):
+        if self.status == 2:
+            if self.move == 0:
+                return 'BEING TRANSFERRED'
+            elif self.move == 1:
+                return 'TRANSFERRED'
+        return 'UNKNOWN STATUS'
+
     def __unicode__(self):
         return self.name
 
@@ -512,7 +524,7 @@ def _instantiate_task(api, kwargs):
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['cid'] = kwargs['file_id']
-    is_transferred = kwargs['status'] == 2
+    is_transferred = (kwargs['status'] == 2 and kwargs['move'] == 1)
     if is_transferred:
         kwargs['pid'] = api.downloads_directory.cid
     else:
