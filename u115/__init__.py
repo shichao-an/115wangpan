@@ -183,7 +183,8 @@ class API(object):
         if count <= self.num_tasks_per_page:
             return tasks + loaded_tasks
         else:
-            return self._load_tasks(count - 30, page + 1, loaded_tasks + tasks)
+            return self._load_tasks(count - self.num_tasks_per_page,
+                                    page + 1, loaded_tasks + tasks)
 
     def _load_directory(self, cid):
         kwargs = self._req_directory(cid)
@@ -361,6 +362,8 @@ class File(BaseFile):
 
 
 class Directory(BaseFile):
+    max_num_entries_per_load = 30
+
     def __init__(self, api, cid, name, pid):
         super(Directory, self).__init__(api, cid, name)
         """
@@ -383,7 +386,29 @@ class Directory(BaseFile):
         self.pid = r['pid']
         self.name = r['name']
 
-    def list(self, cid, offset=0, limit=30, order='user_ptime', asc=False):
+    def _load_entries(self, count, page, order, asc, entries=None):
+        """
+        Similar to API._load_tasks, but differs in that `page' is actually
+        `offset' and starts from 0 instead of 1
+        """
+        if entries is None:
+            entries = []
+        loaded_entries = [
+            _instantiate_task(self, t) for t in
+            self.api._req_files(cid=self.cid,
+                                offset=page,
+                                limit=self.max_num_entries_per_load,
+                                order=order,
+                                asc=asc)[:self.max_num_entries_per_load]
+        ]
+        if count <= self.max_num_entrie_per_load:
+            return entries + loaded_entries
+        else:
+            return self._load_entries(count - self.max_num_entries_per_load,
+                                      page + 1, order, asc,
+                                      loaded_entries + entries)
+
+    def list(self, offset=0, limit=30, order='user_ptime', asc=False):
         """
         Required params:
             :param directory: a Directory object to be listed
@@ -410,7 +435,7 @@ class Directory(BaseFile):
         Return a list of File or Directory objects
         """
         asc = 1 if asc is True else 0
-        res = self.api._req_files(cid, offset, limit, order, asc)
+        res = self.api._req_files(self.cid, offset, limit, order, asc)
         if res.state:
             entries = res.content['data']
             entries = [
