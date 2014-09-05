@@ -524,11 +524,18 @@ class Task(Directory):
 
     @property
     def status_human(self):
+        res = None
         if self.status == 2:
             if self.move == 0:
-                return 'BEING TRANSFERRED'
+                res = 'BEING TRANSFERRED'
             elif self.move == 1:
-                return 'TRANSFERRED'
+                res = 'TRANSFERRED'
+        elif self.status == 4:
+            res = 'SEARCHING RESOURCES'
+        elif self.status == -1:
+            res = 'FAILED'
+        if res is not None:
+            return res
         return 'UNKNOWN STATUS'
 
     def __unicode__(self):
