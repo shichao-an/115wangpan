@@ -301,6 +301,8 @@ class BaseFile(Base):
             for directory: this represents itself
         :param name: string, originally named `n'
 
+        NOTICE
+            cid, fid and pid are in string format at this time
         """
         self.api = api
         self.cid = cid
@@ -311,15 +313,50 @@ class BaseFile(Base):
 
 
 class File(BaseFile):
-    def __init__(self, api, cid, name, size, file_type, thumbnail):
+    def __init__(self, api, fid, cid, name, size, file_type, sha,
+                 date_created, thumbnail):
         super(File, self).__init__(api, cid, name)
         """
-        :param size: integer
-        :param file_type: string, originally named `ico'
-        :param thumbnail: string, URL
+        Implemented parameters:
+            :param fid: integer, file id
+            :param cid: integer, cid of the current directory
+            :param size: integer, size in bytes
+            :param file_type: string, originally named `ico'
+            :param sha: string, sha1 hash
+            :param date_created: string, in "%Y-%m-%d %H:%M:%S" format
+            :param thumbnail: string, URL
+
+        Exhaustive original parameters:
+            "aid": 1,
+            "c": 0,
+            "d": 1,
+            "de": "",
+            "e": "",
+            "epos": "",
+            "et": 0,
+            "hdf": 0,
+            "ico": "avi",
+            "iv": 1,
+            "m": 0,
+            "n": "gepao.avi",
+            "p": 0,
+            "pc": "cm51cq8s1dfy0e4jl",
+            "pt": "0",
+            "q": 0,
+            "s": 1122427036,
+            "sh": 0,
+            "sha": "A1915585290B9DDE0AE86A632C4B38E38C2C8FB",
+            "sta": 1,
+            "t": "2014-09-02 13:39",
+            "u":
+            "http://static.115.com/video/A1915585290B9DDE0AE86A632C4B38E38C2C8FB.jpg",
+            "uid": 334902641
         """
         self.size = size
+        self.size_human = humanize.naturalsize(size, binary=True)
         self.file_type = file_type
+        self.sha = sha
+        self.date_created = utils.string_to_datetime(date_created)
         self.thumbnail = thumbnail
 
 
@@ -346,11 +383,17 @@ class Directory(BaseFile):
         self.pid = r['pid']
         self.name = r['name']
 
-    def list(self, cid, order='user_ptime', offset=0,
-             limit=30, asc=False):
+    def list(self, cid, offset=0, limit=30, order='user_ptime', asc=False):
         """
         Required params:
             :param directory: a Directory object to be listed
+
+        Implemented optional params:
+            :param order: string, originally named `o'
+            :param offset: integer
+            :param limit: integer
+            :param asc: boolean
+
         Exhaustive optional params:
             aid: 1
             o: user_ptime
@@ -363,13 +406,18 @@ class Directory(BaseFile):
             snap: 0
             natsort: 1
             source:
-        Implemented optional params:
-            :param order: string, originally named `o'
-            :param offset: integer
-            :param limit: integer
-            :param asc: boolean
+
         Return a list of File or Directory objects
         """
+        asc = 1 if asc is True else 0
+        res = self.api._req_files(cid, offset, limit, order, asc)
+        if res.state:
+            entries = res.content['data']
+            entries = [
+                Directory(self.api, **entry) if 'pid' in entry
+                else File(self.api, **entry) for entry in entries
+            ]
+            return entries
 
 
 class Task(Directory):
@@ -429,6 +477,16 @@ def _instantiate_task(api, kwargs):
     if is_transferred:
         task._parent = api.downloads_directory
     return task
+
+
+def _instantiate_file(api, kwargs):
+    """
+    ico => file_type
+    t => date_created
+    """
+    kwargs['file_type'] = kwargs['ico']
+    kwargs['date_created'] = kwargs['t']
+    return File(api, **kwargs)
 
 
 class APIError(Exception):

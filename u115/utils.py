@@ -12,3 +12,7 @@ def get_timestamp(length):
 
 def get_utcdatetime(timestamp):
     return datetime.datetime.utcfromtimestamp(timestamp)
+
+
+def string_to_datetime(s):
+    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M")
