@@ -322,7 +322,7 @@ class BaseFile(Base):
 
 class File(BaseFile):
     def __init__(self, api, fid, cid, name, size, file_type, sha,
-                 date_created, thumbnail):
+                 date_created, thumbnail, *args, **kwargs):
         super(File, self).__init__(api, cid, name)
         """
         Implemented parameters:
@@ -379,7 +379,8 @@ class File(BaseFile):
 class Directory(BaseFile):
     max_num_entries_per_load = 30
 
-    def __init__(self, api, cid, name, pid, date_created=None):
+    def __init__(self, api, cid, name, pid, date_created=None,
+                 *args, **kwargs):
         super(Directory, self).__init__(api, cid, name)
         """
         :param pid: integer, represents the parent directory it belongs to
@@ -456,11 +457,13 @@ class Directory(BaseFile):
         res = self.api._req_files(self.cid, offset, limit, order, asc)
         if res.state:
             entries = res.content['data']
-            entries = [
-                _instantiate_directory(self.api, **entry) if 'pid' in entry
-                else _instantiate_file(self.api, **entry) for entry in entries
-            ]
-            return entries
+            res = []
+            for entry in entries:
+                if 'pid' in entry:
+                    res.append(_instantiate_directory(self.api, entry))
+                else:
+                    res.append(_instantiate_file(self.api, entry))
+            return res
 
 
 class Task(Directory):
@@ -528,9 +531,12 @@ def _instantiate_file(api, kwargs):
     t => date_created
     n => name
     """
+    print kwargs
     kwargs['file_type'] = kwargs['ico']
     kwargs['date_created'] = kwargs['t']
     kwargs['name'] = kwargs['n']
+    kwargs['thumbnail'] = kwargs['u']
+    kwargs['size'] = kwargs['s']
     return File(api, **kwargs)
 
 
@@ -538,6 +544,7 @@ def _instantiate_directory(api, kwargs):
     """
     n => name
     t => date_created
+    u => thumbnail
     """
     kwargs['name'] = kwargs['n']
     kwargs['date_created'] = kwargs['t']
