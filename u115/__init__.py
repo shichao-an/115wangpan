@@ -96,6 +96,7 @@ class RequestHandler(object):
 
 class Request(object):
     """Formatted API request class"""
+
     def __init__(self, url, method='GET', params=None, data=None,
                  files=None, headers=None):
         """
@@ -124,6 +125,7 @@ class Response(object):
     :ivar bool state: whether API access is successful
     :ivar dict content: result content
     """
+
     def __init__(self, state, content):
         self.state = state
         self.content = content
@@ -635,6 +637,7 @@ class Task(Directory):
     :ivar int status: status code
 
     """
+
     def __init__(self, api, add_time, file_id, info_hash, last_update,
                  left_time, move, name, peers, percent_done, rate_download,
                  size, status, cid, pid):
