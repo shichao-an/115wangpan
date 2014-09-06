@@ -161,6 +161,43 @@ class API(object):
         self.http.get(self.passport.logout_url)
         self.passport.status = 'LOGGED_OUT'
 
+    @property
+    def downloads_directory(self):
+        """Default directory for downloaded files"""
+        if self._downloads_directory is None:
+            self._load_lixian_space()
+        return self._downloads_directory
+
+    @property
+    def torrents_directory(self):
+        """Default directory that stores uploaded torrents"""
+        if self._torrents_directory is None:
+            self._load_lixian_space()
+        return self._torrents_directory
+
+    def get_tasks(self, count=30):
+        """
+        Get ``count`` number of tasks
+
+        :param int count: number of tasks to get
+        :return: a list of :class:`Task` objects
+        """
+
+        return self._load_tasks(count)
+
+    def add_task_bt(self):
+        """
+        Added a new BT task
+        """
+        pass
+
+    def add_task_url(self):
+        """Added a new URL task (VIP only)"""
+        pass
+
+    def delete_task(self):
+        pass
+
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
         url = 'http://115.com/'
@@ -256,37 +293,6 @@ class API(object):
         self._downloads_directory = self._load_directory(dest_cid)
         self._torrents_directory = self._load_directory(cid)
 
-    @property
-    def downloads_directory(self):
-        """Default directory for downloaded files"""
-        if self._downloads_directory is None:
-            self._load_lixian_space()
-        return self._downloads_directory
-
-    @property
-    def torrents_directory(self):
-        """Default directory that stores uploaded torrents"""
-        if self._torrents_directory is None:
-            self._load_lixian_space()
-        return self._torrents_directory
-
-    def get_tasks(self, count=30):
-        """Get ``count`` number of ``u115.Task`` objects"""
-        return self._load_tasks(count)
-
-    def add_task_bt(self):
-        """
-        Added a new BT task
-        """
-        pass
-
-    def add_task_url(self):
-        """Added a new URL task (VIP only)"""
-        pass
-
-    def delete_task(self):
-        pass
-
 
 class Base(object):
     def __repr__(self):
@@ -304,6 +310,16 @@ class Base(object):
 
 
 class Passport(Base):
+    """
+    Passport for user authentication
+
+    :ivar str username: username
+    :ivar str password: user password
+    :ivar dict form: a dictionary of POST data to login
+    :ivar int user_id: user ID of the authenticated user
+    :ivar dict data: data returned upon login
+    :ivar str status: status of this passport
+    """
     login_url = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
     logout_url = 'http://passport.115.com/?ac=logout'
     checkpoint_url = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
@@ -494,19 +510,20 @@ class Task(Directory):
     """
     BitTorrent or URL task
 
-    :param datetime.datetime add_time: integer to datetiem object
-    :param str file_id: equivalent to `cid` of :class:`Directory`
-    :param str info_hash: hashed value
-    :param datetime.datetime last_update:
-    :param int left_time:
-    :param int move: 1 (transferred) or 0 (not transferred)
-    :param str name: name of this task
-    :param int peers: number of peers
-    :param int percent_done: <=100, originally named `percentDone`
-    :param int rate_download: originally named `rateDownload'
-    :param int size: size of task
-    :param str size_human: human-readable size
-    :param int status:
+    :ivar datetime.datetime add_time: integer to datetiem object
+    :ivar str file_id: equivalent to `cid` of :class:`Directory`
+    :ivar str info_hash: hashed value
+    :ivar datetime.datetime last_update:
+    :ivar int left_time: left time
+    :ivar int move: 1 (transferred) or 0 (not transferred)
+    :ivar str name: name of this task
+    :ivar int peers: number of peers
+    :ivar int percent_done: <=100, originally named `percentDone`
+    :ivar int rate_download: originally named `rateDownload'
+    :ivar int size: size of task
+    :ivar str size_human: human-readable size
+    :ivar int status: status code
+
     """
     def __init__(self, api, add_time, file_id, info_hash, last_update,
                  left_time, move, name, peers, percent_done, rate_download,
@@ -531,6 +548,19 @@ class Task(Directory):
 
     @property
     def status_human(self):
+        """
+        :return: human readable status
+
+            * `BEING TRANSFERRED`: the tasks is being transferred
+            * `TRANSFERRED`: the tasks has been transferred to downloads \
+                    directory
+            * `SEARCHING RESOURCES`
+            * `FAILED`
+            * `UNKNOWN STATUS`
+
+        :rtype: str
+
+        """
         res = None
         if self.status == 2:
             if self.move == 0:
