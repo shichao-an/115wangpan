@@ -202,7 +202,7 @@ class API(object):
         :param str torrent: path to torrent file to upload
         """
 
-        res = self._req_upload_torrent(torrent)
+        res = self._req_upload(torrent)
         return res
 
     def add_task_url(self):
@@ -211,6 +211,19 @@ class API(object):
 
     def delete_task(self):
         pass
+
+    def get_storage_info(self, human=False):
+        """
+        Get storage info
+        :param bool human: whether return human-readable size
+        :return: total and used storage
+        :rtype: dict
+        """
+        res = self._req_get_storage_info()
+        if human:
+            res['total'] = humanize.naturalsize(res['total'], binary=True)
+            res['used'] = humanize.naturalsize(res['used'], binary=True)
+        return res
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
@@ -322,8 +335,19 @@ class API(object):
         res = self._parse_src_js_var('upload_config_h5')
         return res['url']
 
-    def _req_upload_torrent(self, torrent):
-        #if self._upload_url is None:
+    def _req_get_storage_info(self):
+        url = 'http://115.com'
+        params = {
+            'ct': 'ajax',
+            'ac': 'get_storage_info',
+            '_': utils.get_timestamp(13),
+        }
+        req = Request(method='GET', url=url, params=params)
+        res = self.http.send(req)
+        return res.content['1']
+
+    def _req_upload(self, torrent):
+        """Upload a torrent or file"""
         self._upload_url = self._load_upload_url()
         self.http.get('http://upload.115.com/crossdomain.xml')
         b = os.path.basename(torrent)
@@ -337,7 +361,15 @@ class API(object):
         }
         req = Request(method='POST', url=self._upload_url, files=files)
         res = self.http.send(req)
-        return res
+        if res.state:
+            return res
+        else:
+            msg = None
+            if res.content['code'] == 990002:
+                msg = 'Invalid parameter.'
+            elif res.content['code'] == 1001:
+                msg = 'Torrent upload failed. Please try again later.'
+            raise API(msg)
 
 
 class Base(object):
