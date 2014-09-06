@@ -35,9 +35,13 @@
 """
 
 import humanize
+import json
+import os
+import re
 import requests
 import time
 from hashlib import sha1
+from bs4 import BeautifulSoup
 #import pdb
 import utils
 
@@ -63,7 +67,8 @@ class RequestHandler(object):
         r = self.session.request(method=request.method,
                                  url=request.url,
                                  params=request.params,
-                                 data=request.data)
+                                 data=request.data,
+                                 files=request.files)
         return self._response_parser(r)
 
     def _response_parser(self, r, expect_json=True):
@@ -89,11 +94,14 @@ class RequestHandler(object):
 
 class Request(object):
     """Formatted API request class"""
-    def __init__(self, url, method='GET', params=None, data=None):
+    def __init__(self, url, method='GET', params=None, data=None,
+                 files=None, headers=None):
         self.url = url
         self.method = method
         self.params = params
         self.data = data
+        self.files = files
+        self.headers = headers
 
 
 class Response(object):
@@ -107,8 +115,8 @@ class API(object):
     """
     Request and response interface
 
-    :ivar Passport passport: passport associated with this interface
-    :ivar RequestHandler http: request handler associated with this
+    :ivar passport: :class:`Passport` object associated with this interface
+    :ivar http: :class:`RequestHandler` object associated with this
         interface
 
     """
@@ -120,11 +128,15 @@ class API(object):
         self.passport = None
         self.http = RequestHandler()
         self.signatures = {}
+        self._upload_url = None
         self._lixian_timestamp = None
         self._downloads_directory = None
         self._torrents_directory = None
 
     def login(self, username, password):
+        """
+        Created the passport with ``username`` and ``password`` and log in
+        """
         passport = Passport(username, password)
         r = self.http.post(passport.login_url, passport.form)
         # Login success
@@ -146,6 +158,7 @@ class API(object):
             raise error
 
     def has_logged_in(self):
+        """Check whether the API has logged in"""
         if self.passport is not None and self.passport.user_id is not None:
             params = {'user_id': self.passport.user_id}
             r = self.http.get(self.passport.checkpoint_url, params=params)
@@ -154,6 +167,7 @@ class API(object):
         return False
 
     def logout(self):
+        """Log out"""
         self.http.get(self.passport.logout_url)
         self.passport.status = 'LOGGED_OUT'
 
@@ -181,15 +195,19 @@ class API(object):
 
         return self._load_tasks(count)
 
-    def add_task_bt(self):
+    def add_task_bt(self, torrent):
         """
         Added a new BT task
+
+        :param str torrent: path to torrent file to upload
         """
-        pass
+
+        res = self._req_upload_torrent(torrent)
+        return res
 
     def add_task_url(self):
         """Added a new URL task (VIP only)"""
-        pass
+        raise NotImplementedError
 
     def delete_task(self):
         pass
@@ -235,8 +253,8 @@ class API(object):
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
-        if res.state:
-            return res.content['cid']
+        print res.content
+        return res.content
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=0, code=None, scid=None, snap=0, natsort=None,
@@ -284,10 +302,42 @@ class API(object):
 
     def _load_lixian_space(self):
         """Load downloads and torrents directory"""
-        torrent_cid = self._req_lixian_get_id(torrent=True)
-        downloads_cid = self._req_lixian_get_id(torrent=False)
+        r = self._req_lixian_get_id(torrent=False)
+        downloads_cid = r['dest_cid']
+        torrent_cid = r['cid']
         self._downloads_directory = self._load_directory(downloads_cid)
         self._torrents_directory = self._load_directory(torrent_cid)
+
+    def _parse_src_js_var(self, variable):
+        """Parse JavaScript variables in the source page"""
+
+        src_url = 'http://115.com'
+        r = self.http.get(src_url)
+        soup = BeautifulSoup(r.content)
+        text = soup.find_all('script')[6].text
+        pattern = "%s = (.*);" % (variable.upper())
+        m = re.search(pattern, text)
+        return json.loads(m.group(1).strip())
+
+    def _load_upload_url(self):
+        res = self._parse_src_js_var('upload_config_h5')
+        return res['url']
+
+    def _req_upload_torrent(self, torrent):
+        if self._upload_url is None:
+            self._upload_url = self._load_upload_url()
+        b = os.path.basename(torrent)
+        files = {
+            'Filename': b,
+            'target': 'U_1_' + str(self.torrents_directory.cid),
+            'Filedata': (b, open(torrent, 'rb'),
+                         'application/octet-stream'),
+            'Upload': 'Submit Query',
+        }
+        #headers = {'Content-Type': 'multipart/form-data'}
+        req = Request(url=self._upload_url, method='POST', files=files)
+        res = self.http.send(req)
+        return res
 
 
 class Base(object):
