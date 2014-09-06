@@ -127,7 +127,7 @@ class API(object):
     def __init__(self):
         self.passport = None
         self.http = RequestHandler()
-        self.signatures = {}
+        self._signatures = {}
         self._upload_url = None
         self._lixian_timestamp = None
         self._downloads_directory = None
@@ -223,18 +223,18 @@ class API(object):
         req = Request(url=url, params=params)
         r = self.http.send(req)
         if r.state:
-            self.signatures['offline_space'] = r.content['sign']
+            self._signatures['offline_space'] = r.content['sign']
             self._lixian_timestamp = r.content['time']
 
     def _req_lixian_task_lists(self, page=1):
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'task_lists'}
-        if 'offline_space' not in self.signatures:
+        if 'offline_space' not in self._signatures:
             self._req_offline_space()
         data = {
             'page': page,
             'uid': self.passport.user_id,
-            'sign': self.signatures['offline_space'],
+            'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
         req = Request(method='POST', url=url, params=params, data=data)
@@ -327,21 +327,16 @@ class API(object):
         self._upload_url = self._load_upload_url()
         self.http.get('http://upload.115.com/crossdomain.xml')
         b = os.path.basename(torrent)
+        target = 'U_1_' + str(self.torrents_directory.cid)
         files = {
-            'Filename': b,
-            'target': 'U_1_' + str(self.torrents_directory.cid),
+            'Filename': ('', b, ''),
+            'target': ('', target, ''),
             'Filedata': (b, open(torrent, 'rb'),
                          'application/octet-stream'),
-            'Upload': 'Submit Query',
+            'Upload': ('', 'Submit Query', ''),
         }
-        # Use the follow hacks to avoid errors of code 990002 and 1001
-        req = requests.Request('POST', self._upload_url, files=files)
-        prepped = self.http.session.prepare_request(req)
-        s = prepped.body
-        p = '; filename="target"|; filename="Filename"|; filename="Upload"'
-        prepped.body = re.sub(p, '', s, 3)
-        prepped.headers['Content-Length'] = str(len(prepped.body))
-        res = self.http.session.send(prepped)
+        req = Request(method='POST', url=self._upload_url, files=files)
+        res = self.http.send(req)
         return res
 
 
@@ -370,6 +365,12 @@ class Passport(Base):
     :ivar int user_id: user ID of the authenticated user
     :ivar dict data: data returned upon login
     :ivar str status: status of this passport
+
+        * `NEW`: passport is newly created
+        * `LOGGED_IN`: successfully logged in with this passport
+        * `LOGGED_OUT`: logged out
+        * `FAILED`: failed to log in
+
     """
     login_url = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
     logout_url = 'http://passport.115.com/?ac=logout'
