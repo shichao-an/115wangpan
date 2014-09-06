@@ -253,7 +253,6 @@ class API(object):
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
-        print res.content
         return res.content
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
@@ -335,22 +334,14 @@ class API(object):
                          'application/octet-stream'),
             'Upload': 'Submit Query',
         }
-        #prepared = r
+        # Use the follow hacks to avoid errors of code 990002 and 1001
         req = requests.Request('POST', self._upload_url, files=files)
         prepped = self.http.session.prepare_request(req)
         s = prepped.body
-        p1 = '; filename="target"|; filename="Filename"|; filename="Upload"'
-        prepped.body = re.sub(p1, '', s, 3)
-        prepped.headers['Content-Length'] = str(len(bytearray(prepped.body)))
-        #import pdb
-        #pdb.set_trace()
-        print prepped.headers['Content-Length'] 
-        #print prepped.body
+        p = '; filename="target"|; filename="Filename"|; filename="Upload"'
+        prepped.body = re.sub(p, '', s, 3)
+        prepped.headers['Content-Length'] = str(len(prepped.body))
         res = self.http.session.send(prepped)
-        #print self._upload_url
-        #print files
-        req = Request(url=self._upload_url, method='POST', files=files)
-        res = self.http.send(req)
         return res
 
 
