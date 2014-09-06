@@ -350,11 +350,11 @@ class Passport(Base):
 class BaseFile(Base):
     def __init__(self, api, cid, name):
         """
-        :param api: associated API object
-        :param cid: integer
+        :param API api: associated API object
+        :param int cid: integer
             for file: this represents the directory it belongs to;
             for directory: this represents itself
-        :param name: string, originally named `n'
+        :param str name: originally named `n`
 
         NOTICE
             cid, fid and pid are in string format at this time
@@ -368,21 +368,23 @@ class BaseFile(Base):
 
 
 class File(BaseFile):
+    """
+    File in a directory
+
+    :ivar int fid: file id
+    :ivar int cid: cid of the current directory
+    :ivar int size: size in bytes
+    :ivar str file_type: originally named `ico`
+    :ivar str sha: SHA1 hash
+    :ivar datetime.datetime date_created: in "%Y-%m-%d %H:%M:%S" format,
+        originally named `t`
+    :ivar str thumbnail: thumbnail URL, originally named `u`
+    :ivar str pickcode: originally named `pc`
+    """
+
     def __init__(self, api, fid, cid, name, size, file_type, sha,
                  date_created, thumbnail, pickcode, *args, **kwargs):
-        """
-        File in a directory
 
-        :param fid: integer, file id
-        :param cid: integer, cid of the current directory
-        :param size: integer, size in bytes
-        :param file_type: string, originally named `ico'
-        :param sha: string, sha1 hash
-        :param date_created: string, in "%Y-%m-%d %H:%M:%S" format,
-            originally named `t'
-        :param thumbnail: string for URL, originally named `u'
-        :param pickcode: string, originally named `pc'
-        """
         super(File, self).__init__(api, cid, name)
 
         self.fid = fid
@@ -489,25 +491,28 @@ class Directory(BaseFile):
 
 
 class Task(Directory):
+    """
+    BitTorrent or URL task
+
+    :param datetime.datetime add_time: integer to datetiem object
+    :param str file_id: equivalent to `cid` of :class:`Directory`
+    :param str info_hash: hashed value
+    :param datetime.datetime last_update:
+    :param int left_time:
+    :param int move: 1 (transferred) or 0 (not transferred)
+    :param str name: name of this task
+    :param int peers: number of peers
+    :param int percent_done: <=100, originally named `percentDone`
+    :param int rate_download: originally named `rateDownload'
+    :param int size: size of task
+    :param str size_human: human-readable size
+    :param int status:
+    """
     def __init__(self, api, add_time, file_id, info_hash, last_update,
                  left_time, move, name, peers, percent_done, rate_download,
                  size, status, cid, pid):
         super(Task, self).__init__(api, cid, name, pid)
 
-        """
-        :param add_time: integer to datetiem object
-        :param file_id: string, equivalent to `cid' in File of directory type
-        :param info_hash: string
-        :param last_update: integer to datetime object
-        :param left_time: integer
-        :param move: integer
-        :param name: string
-        :param peers: integer
-        :param percent_done: integer (<=100), originally named `percentDone'
-        :param rate_download: integer, originally named `rateDownload'
-        :param size: integer
-        :param status: integer
-        """
         self.add_time = utils.get_utcdatetime(add_time)
         self.file_id = file_id
         self.info_hash = info_hash
