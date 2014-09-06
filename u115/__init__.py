@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-:module: u115
-:synopsis: Request and response interface and components
-:author: shichao.an@nyu.edu (Shichao An)
-
 .. autoclass:: RequestHandler
    :members:
    :undoc-members:
@@ -228,18 +224,19 @@ class API(object):
         if res.state:
             return res.content['tasks']
 
-    def _req_lixian_get_id(self):
+    def _req_lixian_get_id(self, torrent=False):
         """Get `cid' of lixian space directory"""
         url = 'http://115.com/lixian/'
         params = {
             'ct': 'lixian',
             'ac': 'get_id',
+            'torrent': 1 if torrent else None,
             '_': utils.get_utcdatetime(13)
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
-        # res.content should include cid (torrent) and dest_cid (dl)
-        return res
+        if res.state:
+            return res.content['cid']
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=0, code=None, scid=None, snap=0, natsort=None,
@@ -287,11 +284,10 @@ class API(object):
 
     def _load_lixian_space(self):
         """Load downloads and torrents directory"""
-        res = self._req_lixian_get_id()
-        cid = res.content['cid']
-        dest_cid = res.content['dest_cid']
-        self._downloads_directory = self._load_directory(dest_cid)
-        self._torrents_directory = self._load_directory(cid)
+        torrent_cid = self._req_lixian_get_id(torrent=True)
+        downloads_cid = self._req_lixian_get_id(torrent=False)
+        self._downloads_directory = self._load_directory(downloads_cid)
+        self._torrents_directory = self._load_directory(torrent_cid)
 
 
 class Base(object):
@@ -416,15 +412,22 @@ class File(BaseFile):
 
     @property
     def directory(self):
+        """Directory that holds this file"""
         if self._directory is None:
             self._directory = self.api._load_directory(self.cid)
         return self._directory
 
     def get_download_url(self):
+        """Get this file's download URL"""
         if self._download_url is None:
             self._download_url = \
                 self.api._req_files_download_url(self.pickcode)
         return self._download_url
+
+    @property
+    def url(self):
+        """Alias for :func:`File.get_download_url`"""
+        return self.get_download_url()
 
 
 class Directory(BaseFile):
