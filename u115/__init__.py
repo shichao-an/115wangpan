@@ -8,6 +8,8 @@
    :members:
    :undoc-members:
 
+   .. automethod:: __init__
+
 .. autoclass:: Response
    :members:
    :undoc-members:
@@ -96,6 +98,17 @@ class Request(object):
     """Formatted API request class"""
     def __init__(self, url, method='GET', params=None, data=None,
                  files=None, headers=None):
+        """
+        Create a Request object
+
+        :param str url: URL
+        :param str method: request method
+        :param dict params: request parameters
+        :param dict data: form data
+        :param dict files: mulitpart form data
+        :param dict headers: custom request headers
+
+        """
         self.url = url
         self.method = method
         self.params = params
@@ -105,7 +118,12 @@ class Request(object):
 
 
 class Response(object):
-    """Formatted API response class"""
+    """
+    Formatted API response class
+
+    :ivar bool state: whether API access is successful
+    :ivar dict content: result content
+    """
     def __init__(self, state, content):
         self.state = state
         self.content = content
@@ -118,7 +136,7 @@ class API(object):
     :ivar passport: :class:`Passport` object associated with this interface
     :ivar http: :class:`RequestHandler` object associated with this
         interface
-
+    :cvar int num_tasks_per_page: default number of tasks per page/request
     """
 
     num_tasks_per_page = 30
@@ -294,6 +312,42 @@ class API(object):
         if res.state:
             return res.content['file_url']
 
+    def _req_get_storage_info(self):
+        url = 'http://115.com'
+        params = {
+            'ct': 'ajax',
+            'ac': 'get_storage_info',
+            '_': utils.get_timestamp(13),
+        }
+        req = Request(method='GET', url=url, params=params)
+        res = self.http.send(req)
+        return res.content['1']
+
+    def _req_upload(self, torrent):
+        """Upload a torrent or file"""
+        self._upload_url = self._load_upload_url()
+        self.http.get('http://upload.115.com/crossdomain.xml')
+        b = os.path.basename(torrent)
+        target = 'U_1_' + str(self.torrents_directory.cid)
+        files = {
+            'Filename': ('', b, ''),
+            'target': ('', target, ''),
+            'Filedata': (b, open(torrent, 'rb'),
+                         'application/octet-stream'),
+            'Upload': ('', 'Submit Query', ''),
+        }
+        req = Request(method='POST', url=self._upload_url, files=files)
+        res = self.http.send(req)
+        if res.state:
+            return res
+        else:
+            msg = None
+            if res.content['code'] == 990002:
+                msg = 'Invalid parameter.'
+            elif res.content['code'] == 1001:
+                msg = 'Torrent upload failed. Please try again later.'
+            raise APIError(msg)
+
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
@@ -334,42 +388,6 @@ class API(object):
     def _load_upload_url(self):
         res = self._parse_src_js_var('upload_config_h5')
         return res['url']
-
-    def _req_get_storage_info(self):
-        url = 'http://115.com'
-        params = {
-            'ct': 'ajax',
-            'ac': 'get_storage_info',
-            '_': utils.get_timestamp(13),
-        }
-        req = Request(method='GET', url=url, params=params)
-        res = self.http.send(req)
-        return res.content['1']
-
-    def _req_upload(self, torrent):
-        """Upload a torrent or file"""
-        self._upload_url = self._load_upload_url()
-        self.http.get('http://upload.115.com/crossdomain.xml')
-        b = os.path.basename(torrent)
-        target = 'U_1_' + str(self.torrents_directory.cid)
-        files = {
-            'Filename': ('', b, ''),
-            'target': ('', target, ''),
-            'Filedata': (b, open(torrent, 'rb'),
-                         'application/octet-stream'),
-            'Upload': ('', 'Submit Query', ''),
-        }
-        req = Request(method='POST', url=self._upload_url, files=files)
-        res = self.http.send(req)
-        if res.state:
-            return res
-        else:
-            msg = None
-            if res.content['code'] == 990002:
-                msg = 'Invalid parameter.'
-            elif res.content['code'] == 1001:
-                msg = 'Torrent upload failed. Please try again later.'
-            raise API(msg)
 
 
 class Base(object):
@@ -540,6 +558,7 @@ class Directory(BaseFile):
 
     @property
     def parent(self):
+        """Parent directory that holds this directory"""
         if self._parent is None:
             if self.pid is not None:
                 self._parent = self.api._load_directory(self.pid)
@@ -635,6 +654,10 @@ class Task(Directory):
         self.status = status
 
     def is_transferred(self):
+        """
+        :return: whether this tasks has been transferred
+        :rtype: bool
+        """
         return self.move == 1
 
     @property
