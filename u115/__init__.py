@@ -1,4 +1,43 @@
 # -*- coding: utf-8 -*-
+"""
+:module: u115
+:synopsis: Request and response interface and components
+:author: shichao.an@nyu.edu (Shichao An)
+
+.. autoclass:: RequestHandler
+   :members:
+   :undoc-members:
+
+.. autoclass:: Request
+   :members:
+   :undoc-members:
+
+.. autoclass:: Response
+   :members:
+   :undoc-members:
+
+.. autoclass:: Passport
+   :members:
+   :undoc-members:
+
+.. autoclass:: API
+   :members:
+   :undoc-members:
+
+.. autoclass:: Task
+   :members:
+   :undoc-members:
+
+.. autoclass:: File
+   :members:
+   :undoc-members:
+
+.. autoclass:: Directory
+   :members:
+   :undoc-members:
+
+"""
+
 import humanize
 import requests
 import time
@@ -33,9 +72,10 @@ class RequestHandler(object):
 
     def _response_parser(self, r, expect_json=True):
         """
-        :param r: a response object of the Requests library
-        :param expect_json: if True, raise APIError if response is not in JSON
-            format
+        :param :class:`requests.Response` r: a response object of the Requests
+            library
+        :param bool expect_json: if True, raise APIError if response is not in
+            JSON format
         """
         if r.ok:
             try:
@@ -61,6 +101,7 @@ class Request(object):
 
 
 class Response(object):
+    """Formatted API response class"""
     def __init__(self, state, content):
         self.state = state
         self.content = content
@@ -70,9 +111,10 @@ class API(object):
     """
     Request and response interface
 
-    Functions:
-        _req_*: send raw requests
-        _load_*: usually wrapper of raw requests
+    :ivar Passport passport: passport associated with this interface
+    :ivar RequestHandler http: request handler associated with this
+        interface
+
     """
 
     num_tasks_per_page = 30
@@ -216,28 +258,25 @@ class API(object):
 
     @property
     def downloads_directory(self):
+        """Default directory for downloaded files"""
         if self._downloads_directory is None:
             self._load_lixian_space()
         return self._downloads_directory
 
     @property
     def torrents_directory(self):
+        """Default directory that stores uploaded torrents"""
         if self._torrents_directory is None:
             self._load_lixian_space()
         return self._torrents_directory
 
     def get_tasks(self, count=30):
+        """Get ``count`` number of ``u115.Task`` objects"""
         return self._load_tasks(count)
 
     def add_task_bt(self):
         """
         Added a new BT task
-        TODO:
-            ac=get_id&torrent=1: get cid
-            upload?debug: upload torrent file
-            ac=torrent: torrent list
-            ac=add_task_bt: send selected files
-
         """
         pass
 
@@ -331,45 +370,21 @@ class BaseFile(Base):
 class File(BaseFile):
     def __init__(self, api, fid, cid, name, size, file_type, sha,
                  date_created, thumbnail, pickcode, *args, **kwargs):
-        super(File, self).__init__(api, cid, name)
         """
-        Implemented parameters:
-            :param fid: integer, file id
-            :param cid: integer, cid of the current directory
-            :param size: integer, size in bytes
-            :param file_type: string, originally named `ico'
-            :param sha: string, sha1 hash
-            :param date_created: string, in "%Y-%m-%d %H:%M:%S" format,
-                originally named `t'
-            :param thumbnail: string for URL, originally named `u'
-            :param pickcode: string, originally named `pc'
+        File in a directory
 
-        Exhaustive original parameters:
-            "aid": 1,
-            "c": 0,
-            "d": 1,
-            "de": "",
-            "e": "",
-            "epos": "",
-            "et": 0,
-            "hdf": 0,
-            "ico": "avi",
-            "iv": 1,
-            "m": 0,
-            "n": "gepao.avi",
-            "p": 0,
-            "pc": "cm51cq8s1dfy0e4jl",
-            "pt": "0",
-            "q": 0,
-            "s": 1122427036,
-            "sh": 0,
-            "sha": "A1915585290B9DDE0AE86A632C4B38E38C2C8FB",
-            "sta": 1,
-            "t": "2014-09-02 13:39",
-            "u":
-            "http://static.115.com/video/A1915585290B9DDE0AE86A632C4B38E38C2C8FB.jpg",
-            "uid": 334902641
+        :param fid: integer, file id
+        :param cid: integer, cid of the current directory
+        :param size: integer, size in bytes
+        :param file_type: string, originally named `ico'
+        :param sha: string, sha1 hash
+        :param date_created: string, in "%Y-%m-%d %H:%M:%S" format,
+            originally named `t'
+        :param thumbnail: string for URL, originally named `u'
+        :param pickcode: string, originally named `pc'
         """
+        super(File, self).__init__(api, cid, name)
+
         self.fid = fid
         self.size = size
         self.size_human = humanize.naturalsize(size, binary=True)
@@ -395,17 +410,19 @@ class File(BaseFile):
 
 
 class Directory(BaseFile):
+    """
+    :ivar int cid: cid of this directory
+    :ivar int pid: represents the parent directory it belongs to
+    :ivar datetime.datetime date_created: integer, originally named `t`
+    :ivar str pickcode: string, originally named `pc`
+
+    """
     max_num_entries_per_load = 30
 
     def __init__(self, api, cid, name, pid, date_created=None, pickcode=None,
                  *args, **kwargs):
         super(Directory, self).__init__(api, cid, name)
-        """
-        :param pid: integer, represents the parent directory it belongs to
-        :param date_created: integer, originally named `t'
-        :param pickcode: string, originally named `pc'
 
-        """
         self.pid = pid
         if date_created is not None:
             self.date_created = utils.get_utcdatetime(date_created)
@@ -449,29 +466,14 @@ class Directory(BaseFile):
 
     def list(self, offset=0, limit=30, order='user_ptime', asc=False):
         """
-        Required params:
-            :param directory: a Directory object to be listed
+        List directory contents
 
-        Implemented optional params:
-            :param order: string, originally named `o'
-            :param offset: integer
-            :param limit: integer
-            :param asc: boolean
+        :param str order: originally named `o`
+        :param int offset:
+        :param int limit:
+        :param bool asc:
 
-        Exhaustive optional params:
-            aid: 1
-            o: user_ptime
-            asc: 0
-            offset: 1
-            show_dir: 0
-            limit: 2
-            code:
-            scid:
-            snap: 0
-            natsort: 1
-            source:
-
-        Return a list of File or Directory objects
+        Return a list of :class:`.File` or :class:`Directory` objects
         """
         asc = 1 if asc is True else 0
         res = self.api._req_files(self.cid, offset, limit, order, asc)
