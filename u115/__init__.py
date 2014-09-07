@@ -295,10 +295,12 @@ class API(object):
 
         if directory is None:
             directory = self.downloads_directory
+
         # First request
         res1 = self._req_upload(filename, directory)
         data1 = res1['data']
         file_id = data1['file_id']
+
         # Second request
         res2 = self._req_file(file_id)
         data2 = res2['data'][0]
@@ -349,7 +351,7 @@ class API(object):
         return res.content
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
-                   show_dir=0, code=None, scid=None, snap=0, natsort=None,
+                   show_dir=1, code=None, scid=None, snap=0, natsort=None,
                    source=None):
         params = locals()
         del params['self']
@@ -651,34 +653,31 @@ class Directory(BaseFile):
         if entries is None:
             entries = []
         loaded_entries = [
-            _instantiate_task(self, t) for t in
+            entry for entry in
             self.api._req_files(cid=self.cid,
                                 offset=page,
                                 limit=self.max_entries_per_load,
-                                order=order,
+                                o=order,
                                 asc=asc)['data'][:self.max_entries_per_load]
         ]
-        if count <= self.max_num_entrie_per_load:
+        if count <= self.max_entries_per_load:
             return entries + loaded_entries
         else:
             return self._load_entries(count - self.max_entries_per_load,
                                       page + 1, order, asc,
-                                      loaded_entries + entries)
+                                      entries + loaded_entries)
 
-    def list(self, offset=0, limit=30, order='user_ptime', asc=False):
+    def list(self, count=30, order='user_ptime', asc=False):
         """
         List directory contents
 
         :param str order: originally named `o`
-        :param int offset:
-        :param int limit:
         :param bool asc:
 
         Return a list of :class:`.File` or :class:`Directory` objects
         """
         asc = 1 if asc is True else 0
-        res = self.api._req_files(self.cid, offset, limit, order, asc)
-        entries = res['data']
+        entries = self._load_entries(count, page=0, order=order, asc=asc)
         res = []
         for entry in entries:
             if 'pid' in entry:
@@ -811,7 +810,7 @@ def _instantiate_directory(api, kwargs):
     t => date_created
     """
     kwargs['name'] = kwargs['n']
-    kwargs['date_created'] = utils.get_utcdatetime(kwargs['t'])
+    kwargs['date_created'] = utils.get_utcdatetime(float(kwargs['t']))
     kwargs['pickcode'] = kwargs.get('pc')
     return Directory(api, **kwargs)
 
