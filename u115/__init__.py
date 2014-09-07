@@ -34,6 +34,10 @@
    :members:
    :undoc-members:
 
+.. autoclass::  APIError
+   :members:
+   :undoc-members:
+
 """
 
 import humanize
@@ -53,20 +57,37 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
 
 
 class RequestHandler(object):
+    """
+    Request handler that maintains session
+
+    :ivar session: underlying :class:`requests.Session` instance
+
+    """
     def __init__(self):
         self.session = requests.Session()
         self.session.headers['User-Agent'] = USER_AGENT
 
     def get(self, url, params=None):
+        """
+        Initiate a GET request
+        """
         r = self.session.get(url, params=params)
         return self._response_parser(r, expect_json=False)
 
     def post(self, url, data, params=None):
+        """
+        Initiate a POST request
+        """
         r = self.session.post(url, data=data, params=params)
         return self._response_parser(r, expect_json=False)
 
     def send(self, request):
-        """Send a formatted API request"""
+        """
+        Send a formatted API request
+
+        :param request: a formatted request object
+        :type request: :class:`Request`
+        """
         r = self.session.request(method=request.method,
                                  url=request.url,
                                  params=request.params,
@@ -164,6 +185,7 @@ class API(object):
         :param str username: username to login (email, phone number or user ID)
         :param str password: password
         :param str section: section name in the credential file
+        :raise: raises :class:`APIError` if failed to login
         """
         if username is None or password is None:
             credential = conf.get_credential(section)
@@ -172,7 +194,7 @@ class API(object):
 
         passport = Passport(username, password)
         r = self.http.post(passport.login_url, passport.form)
-        # Login success
+
         if r.state is True:
             # Bind this passport to API
             self.passport = passport
@@ -761,4 +783,5 @@ def _instantiate_directory(api, kwargs):
 
 
 class APIError(Exception):
+    """Error related to API access"""
     pass
