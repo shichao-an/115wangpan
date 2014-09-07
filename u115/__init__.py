@@ -262,14 +262,14 @@ class API(object):
 
         return self._load_tasks(count)
 
-    def add_task_bt(self, torrent):
+    def add_task_bt(self, filename):
         """
         Added a new BT task
 
-        :param str torrent: path to torrent file to upload
+        :param str filename: path to torrent file to upload
         """
 
-        u = self.upload(torrent, self.torrents_directory)
+        u = self.upload(filename, self.torrents_directory)
         t = self._load_torrent(u)
         t.submit()
 
@@ -386,7 +386,6 @@ class API(object):
             raise APIError('Failed to open torrent.')
 
     def _req_lixian_add_task_bt(self, t):
-        pass
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'add_task_bt'}
         _wanted = []
@@ -405,7 +404,7 @@ class API(object):
         req = Request(method='POST', url=url, params=params, data=data)
         res = self.http.send(req)
         if res.state:
-            return res.content
+            return True
         else:
             print res.content.get('error_msg')
             raise APIError('Failed to create new task.')
@@ -674,6 +673,15 @@ class File(BaseFile):
         """Alias for :func:`File.get_download_url`"""
         return self.get_download_url()
 
+    @property
+    def is_torrent(self):
+        return self.file_type == 'torrent'
+
+    @property
+    def open_torrent(self):
+        if self.is_torrent:
+            return self.api._load_torrent(self)
+
 
 class Directory(BaseFile):
     """
@@ -846,11 +854,13 @@ class Torrent(Base):
         self.info_hash = info_hash
         self.file_count = file_count
         self.files = files
-        self._load_selected()
+        self.submitted = False
 
     def submit(self):
         """Submit this torrent and create a new task"""
-        self.api._req_lixian_add_task_bt(self)
+        if self.api._req_lixian_add_task_bt(self):
+            self.submitted = True
+            return True
 
     @property
     def selected_files(self):
