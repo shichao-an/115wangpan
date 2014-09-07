@@ -30,6 +30,10 @@
    :members:
    :undoc-members:
 
+.. autoclass:: TorrentFile
+   :members:
+   :undoc-members:
+
 .. autoclass:: File
    :members:
    :undoc-members:
@@ -385,7 +389,11 @@ class API(object):
         pass
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'add_task_bt'}
-        wanted = ','.join(['1' if f is True else '0' for f in t.selected])
+        _wanted = []
+        for i, b in enumerate(t.files):
+            if b.selected:
+                _wanted.append(str(i))
+        wanted = ','.join(_wanted)
         data = {
             'info_hash': t.info_hash,
             'wanted': wanted,
@@ -399,6 +407,7 @@ class API(object):
         if res.state:
             return res.content
         else:
+            print res.content.get('error_msg')
             raise APIError('Failed to create new task.')
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
@@ -837,16 +846,19 @@ class Torrent(Base):
         self.info_hash = info_hash
         self.file_count = file_count
         self.files = files
-        self._selected = None
         self._load_selected()
 
     def submit(self):
         """Submit this torrent and create a new task"""
-        self._load_selected()
         self.api._req_lixian_add_task_bt(self)
 
-    def _load_selected(self):
-        self._selected = [True if f.selected else False for f in self.files]
+    @property
+    def selected_files(self):
+        return [f for f in self.files if f.selected]
+
+    @property
+    def unselected_files(self):
+        return [f for f in self.files if not f.selected]
 
     def __unicode__(self):
         return self.name
@@ -873,12 +885,11 @@ def TorrentFile(Base):
         return '[%s] %s' ('*' if self.selected else ' ', self.path)
 
 
-def _instantiate_task(api, kwargs):
-    """Create a Task object from raw kwargs
+# Internal functions
 
-    rateDownload => rate_download
-    percentDone => percent_done
-    """
+
+def _instantiate_task(api, kwargs):
+    """Create a Task object from raw kwargs"""
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['add_time'] = utils.get_utcdatetime(kwargs['add_time'])
@@ -895,9 +906,6 @@ def _instantiate_task(api, kwargs):
     if is_transferred:
         task._parent = api.downloads_directory
     return task
-
-
-# Internal functions
 
 
 def _instantiate_file(api, kwargs):
@@ -947,7 +955,7 @@ def _instantiate_torrent(api, kwargs):
 
 
 def _instantiate_torrent_file(kwargs):
-    kwargs['selected'] = kwargs['wanted']
+    kwargs['selected'] = True if kwargs['wanted'] == 1 else False
     del kwargs['selected']
     return TorrentFile(**kwargs)
 
