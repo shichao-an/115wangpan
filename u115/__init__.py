@@ -179,6 +179,7 @@ class API(object):
             passport.data = r.content['data']
             passport.user_id = r.content['data']['USER_ID']
             passport.status = 'LOGGED_IN'
+            return True
         else:
             msg = None
             if 'err_name' in r.content:
@@ -203,6 +204,7 @@ class API(object):
         """Log out"""
         self.http.get(self.passport.logout_url)
         self.passport.status = 'LOGGED_OUT'
+        return True
 
     @property
     def downloads_directory(self):
