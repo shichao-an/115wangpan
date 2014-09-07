@@ -685,10 +685,16 @@ class File(BaseFile):
 
     @property
     def is_torrent(self):
+        """Whether the file is a torrent"""
         return self.file_type == 'torrent'
 
-    @property
     def open_torrent(self):
+        """
+        Open the torrent (if it is a torrent)
+
+        :return: opened torrent
+        :rtype: :class:`Torrent`
+        """
         if self.is_torrent:
             return self.api._load_torrent(self)
 
@@ -774,7 +780,7 @@ class Task(Directory):
     """
     BitTorrent or URL task
 
-    :ivar datetime.datetime add_time: integer to datetiem object
+    :ivar datetime.datetime add_time: added time
     :ivar str file_id: equivalent to `cid` of :class:`Directory`
     :ivar str info_hash: hashed value
     :ivar datetime.datetime last_update:
@@ -818,7 +824,9 @@ class Task(Directory):
     @property
     def status_human(self):
         """
-        :return: human readable status
+        Human readable status
+
+        :return:
 
             * `BEING TRANSFERRED`: the tasks is being transferred
             * `TRANSFERRED`: the tasks has been transferred to downloads \
@@ -877,10 +885,12 @@ class Torrent(Base):
 
     @property
     def selected_files(self):
+        """List of selected :class:`TorrentFile` objects of this torrent"""
         return [f for f in self.files if f.selected]
 
     @property
     def unselected_files(self):
+        """List of unselected :class:`TorrentFile` objects of this torrent"""
         return [f for f in self.files if not f.selected]
 
     def __unicode__(self):
