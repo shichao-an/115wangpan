@@ -355,23 +355,28 @@ class API(object):
         del params['self']
         req = Request(method='GET', url=self.web_api_url, params=params)
         res = self.http.send(req)
-        return res
+        if res.state:
+            return res.content
+        else:
+            raise APIError('Failed to access files API.')
 
     def _req_file(self, file_id):
         url = self.web_api_url + '/file'
         data = {'file_id': file_id}
         req = Request(method='POST', url=url, data=data)
         res = self.http.send(req)
-        return res
+        if res.state:
+            return res.content
+        else:
+            raise APIError('Failed to access files API.')
 
     def _req_directory(self, cid):
         """Return name and pid of by cid"""
         res = self._req_files(cid=cid, offset=0, limit=1)
-        if res.state:
-            path = res.content['path']
-            for d in path:
-                if str(d['cid']) == cid:
-                    return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
+        path = res['path']
+        for d in path:
+            if str(d['cid']) == cid:
+                return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
 
     def _req_files_download_url(self, pickcode):
         url = self.web_api_url + '/download'
@@ -407,7 +412,7 @@ class API(object):
         req = Request(method='POST', url=self._upload_url, files=files)
         res = self.http.send(req)
         if res.state:
-            return res
+            return res.content
         else:
             msg = None
             if res.content['code'] == 990002:
@@ -442,6 +447,10 @@ class API(object):
         self._downloads_directory = self._load_directory(downloads_cid)
         self._torrents_directory = self._load_directory(torrent_cid)
 
+    def _load_upload_url(self):
+        res = self._parse_src_js_var('upload_config_h5')
+        return res['url']
+
     def _parse_src_js_var(self, variable):
         """Parse JavaScript variables in the source page"""
 
@@ -452,10 +461,6 @@ class API(object):
         pattern = "%s = (.*);" % (variable.upper())
         m = re.search(pattern, text)
         return json.loads(m.group(1).strip())
-
-    def _load_upload_url(self):
-        res = self._parse_src_js_var('upload_config_h5')
-        return res['url']
 
 
 class Base(object):
@@ -578,7 +583,7 @@ class File(BaseFile):
         self.size_human = humanize.naturalsize(size, binary=True)
         self.file_type = file_type
         self.sha = sha
-        self.date_created = utils.string_to_datetime(date_created)
+        self.date_created = date_created
         self.thumbnail = thumbnail
         self.pickcode = pickcode
         self._directory = None
@@ -612,7 +617,7 @@ class Directory(BaseFile):
     :ivar str pickcode: string, originally named `pc`
 
     """
-    max_num_entries_per_load = 30
+    max_entries_per_load = 30
 
     def __init__(self, api, cid, name, pid, date_created=None, pickcode=None,
                  *args, **kwargs):
@@ -620,7 +625,7 @@ class Directory(BaseFile):
 
         self.pid = pid
         if date_created is not None:
-            self.date_created = utils.get_utcdatetime(date_created)
+            self.date_created = date_created
         self.pickcode = pickcode
         self._parent = None
 
@@ -649,14 +654,14 @@ class Directory(BaseFile):
             _instantiate_task(self, t) for t in
             self.api._req_files(cid=self.cid,
                                 offset=page,
-                                limit=self.max_num_entries_per_load,
+                                limit=self.max_entries_per_load,
                                 order=order,
-                                asc=asc)[:self.max_num_entries_per_load]
+                                asc=asc)['data'][:self.max_entries_per_load]
         ]
         if count <= self.max_num_entrie_per_load:
             return entries + loaded_entries
         else:
-            return self._load_entries(count - self.max_num_entries_per_load,
+            return self._load_entries(count - self.max_entries_per_load,
                                       page + 1, order, asc,
                                       loaded_entries + entries)
 
@@ -673,15 +678,14 @@ class Directory(BaseFile):
         """
         asc = 1 if asc is True else 0
         res = self.api._req_files(self.cid, offset, limit, order, asc)
-        if res.state:
-            entries = res.content['data']
-            res = []
-            for entry in entries:
-                if 'pid' in entry:
-                    res.append(_instantiate_directory(self.api, entry))
-                else:
-                    res.append(_instantiate_file(self.api, entry))
-            return res
+        entries = res['data']
+        res = []
+        for entry in entries:
+            if 'pid' in entry:
+                res.append(_instantiate_directory(self.api, entry))
+            else:
+                res.append(_instantiate_file(self.api, entry))
+        return res
 
 
 class Task(Directory):
@@ -709,10 +713,10 @@ class Task(Directory):
                  size, status, cid, pid):
         super(Task, self).__init__(api, cid, name, pid)
 
-        self.add_time = utils.get_utcdatetime(add_time)
+        self.add_time = add_time
         self.file_id = file_id
         self.info_hash = info_hash
-        self.last_update = utils.get_utcdatetime(last_update)
+        self.last_update = last_update
         self.left_time = left_time
         self.move = move
         self.peers = peers
@@ -770,6 +774,8 @@ def _instantiate_task(api, kwargs):
     """
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
+    kwargs['add_time'] = utils.get_utcdatetime(kwargs['add_time'])
+    kwargs['last_update'] = utils.get_utcdatetime(kwargs['last_update'])
     kwargs['cid'] = kwargs['file_id']
     is_transferred = (kwargs['status'] == 2 and kwargs['move'] == 1)
     if is_transferred:
@@ -791,7 +797,7 @@ def _instantiate_file(api, kwargs):
     n => name
     """
     kwargs['file_type'] = kwargs['ico']
-    kwargs['date_created'] = kwargs['t']
+    kwargs['date_created'] = utils.string_to_datetime(kwargs['t'])
     kwargs['pickcode'] = kwargs['pc']
     kwargs['name'] = kwargs['n']
     kwargs['thumbnail'] = kwargs['u']
@@ -806,7 +812,7 @@ def _instantiate_directory(api, kwargs):
     u => thumbnail
     """
     kwargs['name'] = kwargs['n']
-    kwargs['date_created'] = kwargs['t']
+    kwargs['date_created'] = utils.get_utcdatetime(kwargs['t'])
     kwargs['pickcode'] = kwargs.get('pc')
     return Directory(api, **kwargs)
 
@@ -817,8 +823,10 @@ def _instantiate_uploaded_file(api, kwargs):
     kwargs['pickcode'] = kwargs['pick_code']
     kwargs['size'] = kwargs['file_size']
     kwargs['sha'] = kwargs['sha1']
-    kwargs['date_created'] = kwargs['file_ptime']
+    kwargs['date_created'] = utils.get_utcdatetime(kwargs['file_ptime'])
     kwargs['thumbnail'] = None
+    _, ft = os.path.splitext(kwargs['name'])
+    kwargs['file_type'] = ft[1:]
     return File(api, **kwargs)
 
 
