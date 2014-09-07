@@ -1,8 +1,10 @@
 *.py[cod]
 .DS_Store
 *.swp
+*.bak
 build
 dist
 *.egg-info
 .tox
 run.py
+.credentials

@@ -46,6 +46,7 @@ from hashlib import sha1
 from bs4 import BeautifulSoup
 #import pdb
 import utils
+from u115 import conf
 
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) \
 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
@@ -153,10 +154,22 @@ class API(object):
         self._downloads_directory = None
         self._torrents_directory = None
 
-    def login(self, username, password):
+    def login(self, username=None, password=None,
+              section='default'):
         """
-        Created the passport with ``username`` and ``password`` and log in
+        Created the passport with ``username`` and ``password`` and log in.
+        If either ``username`` or ``password`` is None or omitted, the
+        credentials file will be parsed.
+
+        :param str username: username to login (email, phone number or user ID)
+        :param str password: password
+        :param str section: section name in the credential file
         """
+        if username is None or password is None:
+            credential = conf.get_credential(section)
+            username = credential['username']
+            password = credential['password']
+
         passport = Passport(username, password)
         r = self.http.post(passport.login_url, passport.form)
         # Login success
