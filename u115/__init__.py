@@ -860,6 +860,7 @@ class Torrent(Base):
 
     def __init__(self, api, name, size, info_hash, file_count, files=None,
                  *args, **kwargs):
+        self.api = api
         self.name = name
         self.size = size
         self.size_human = humanize.naturalsize(size, binary=True)
@@ -886,7 +887,7 @@ class Torrent(Base):
         return self.name
 
 
-def TorrentFile(Base):
+class TorrentFile(Base):
     """
     File in the torrent file list
 
@@ -972,10 +973,10 @@ def _instantiate_torrent(api, kwargs):
     del kwargs['torrent_filelist_web']
     torrent = Torrent(api, **kwargs)
     torrent.files = [_instantiate_torrent_file(torrent, f) for f in file_list]
+    return torrent
 
 
 def _instantiate_torrent_file(torrent, kwargs):
-    print kwargs
     kwargs['selected'] = True if kwargs['wanted'] == 1 else False
     del kwargs['wanted']
     return TorrentFile(torrent, **kwargs)
