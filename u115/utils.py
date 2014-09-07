@@ -1,4 +1,5 @@
 import datetime
+import os
 import time
 
 
@@ -16,3 +17,7 @@ def get_utcdatetime(timestamp):
 
 def string_to_datetime(s):
     return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M")
+
+
+def eval_path(path):
+    return os.path.abspath(os.path.expanduser(path))

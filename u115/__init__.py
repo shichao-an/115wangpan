@@ -269,7 +269,7 @@ class API(object):
 
         :param str filename: path to torrent file to upload
         """
-
+        filename = utils.eval_path(filename)
         u = self.upload(filename, self.torrents_directory)
         t = self._load_torrent(u)
         return t.submit()
@@ -304,7 +304,7 @@ class API(object):
         :return: the uploaded file
         :rtype: :class:`File`
         """
-
+        filename = utils.eval_path(filename)
         if directory is None:
             directory = self.downloads_directory
 
@@ -332,12 +332,14 @@ class API(object):
         if r.state:
             self._signatures['offline_space'] = r.content['sign']
             self._lixian_timestamp = r.content['time']
+        else:
+            msg = 'Failed to retrieve signatures.'
+            raise APIError(msg)
 
     def _req_lixian_task_lists(self, page=1):
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'task_lists'}
-        if 'offline_space' not in self._signatures:
-            self._req_offline_space()
+        self._load_signatures()
         data = {
             'page': page,
             'uid': self.passport.user_id,
@@ -367,6 +369,7 @@ class API(object):
         :param u: uploaded torrent file
         """
 
+        self._load_signatures()
         url = 'http://115.com/lixian/'
         params = {
             'ct': 'lixian',
@@ -387,6 +390,8 @@ class API(object):
             raise APIError('Failed to open torrent.')
 
     def _req_lixian_add_task_bt(self, t):
+
+        self._load_signatures()
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'add_task_bt'}
         _wanted = []
@@ -434,11 +439,11 @@ class API(object):
 
     def _req_directory(self, cid):
         """Return name and pid of by cid"""
-        res = self._req_files(cid=cid, offset=0, limit=1)
+        res = self._req_files(cid=cid, offset=0, limit=1, show_dir=1)
         path = res['path']
         for d in path:
-            if str(d['cid']) == cid:
-                return {'cid': cid, 'name': d['name'], 'pid': d['pid']}
+            if str(d['cid']) == str(cid):
+                return {'cid': d['cid'], 'name': d['name'], 'pid': d['pid']}
 
     def _req_files_download_url(self, pickcode):
         url = self.web_api_url + '/download'
@@ -482,6 +487,10 @@ class API(object):
             elif res.content['code'] == 1001:
                 msg = 'Torrent upload failed. Please try again later.'
             raise APIError(msg)
+
+    def _load_signatures(self, force=True):
+        if not self._signatures or force:
+            self._req_offline_space()
 
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
@@ -849,7 +858,7 @@ class Torrent(Base):
         originally named `torrent_filelist_web`
     """
 
-    def __init__(self, api, name, size, info_hash, file_count, files,
+    def __init__(self, api, name, size, info_hash, file_count, files=None,
                  *args, **kwargs):
         self.name = name
         self.size = size
@@ -955,20 +964,21 @@ def _instantiate_uploaded_file(api, kwargs):
 
 
 def _instantiate_torrent(api, kwargs):
-    kwargs['size'] = kwargs['torrent_size']
+    kwargs['size'] = kwargs['file_size']
     kwargs['name'] = kwargs['torrent_name']
     file_list = kwargs['torrent_filelist_web']
-    kwargs['files'] = [_instantiate_torrent_file(f) for f in file_list]
-    del kwargs['torrent_size']
+    del kwargs['file_size']
     del kwargs['torrent_name']
     del kwargs['torrent_filelist_web']
-    return Torrent(api, **kwargs)
+    torrent = Torrent(api, **kwargs)
+    torrent.files = [_instantiate_torrent_file(torrent, f) for f in file_list]
 
 
-def _instantiate_torrent_file(kwargs):
+def _instantiate_torrent_file(torrent, kwargs):
+    print kwargs
     kwargs['selected'] = True if kwargs['wanted'] == 1 else False
-    del kwargs['selected']
-    return TorrentFile(**kwargs)
+    del kwargs['wanted']
+    return TorrentFile(torrent, **kwargs)
 
 
 class APIError(Exception):
