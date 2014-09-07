@@ -223,6 +223,7 @@ class API(object):
             error = APIError(msg)
             raise error
 
+    @property
     def has_logged_in(self):
         """Check whether the API has logged in"""
         if self.passport is not None and self.passport.user_id is not None:
@@ -271,7 +272,7 @@ class API(object):
 
         u = self.upload(filename, self.torrents_directory)
         t = self._load_torrent(u)
-        t.submit()
+        return t.submit()
 
     def add_task_url(self):
         """Added a new URL task (VIP only)"""
@@ -885,6 +886,7 @@ def TorrentFile(Base):
     :param int size: file size
     :param bool selected: whether this file is selected
     """
+
     def __init__(self, torrent, path, size, selected, *args, **kwargs):
         self.torrent = torrent
         self.path = path
@@ -893,11 +895,9 @@ def TorrentFile(Base):
         self.selected = selected
 
     def __unicode__(self):
-        return '[%s] %s' ('*' if self.selected else ' ', self.path)
-
+        return '[%s] %s' % ('*' if self.selected else ' ', self.path)
 
 # Internal functions
-
 
 def _instantiate_task(api, kwargs):
     """Create a Task object from raw kwargs"""

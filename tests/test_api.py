@@ -17,3 +17,4 @@ class TestAPI(TestCase):
 
     def test_login_credentials(self):
         assert self.api.login(section='test')
+        assert self.api.logout()
