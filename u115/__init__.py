@@ -692,7 +692,7 @@ class Directory(BaseFile):
     :ivar str pickcode: string, originally named `pc`
 
     """
-    max_entries_per_load = 30
+    max_entries_per_load = 10
 
     def __init__(self, api, cid, name, pid, date_created=None, pickcode=None,
                  *args, **kwargs):
@@ -718,39 +718,40 @@ class Directory(BaseFile):
         self.pid = r['pid']
         self.name = r['name']
 
-    def _load_entries(self, count, page, order, asc, entries=None):
-        """
-        Similar to API._load_tasks, but differs in that `page' is actually
-        `offset' and starts from 0 instead of 1
-        """
+    def _load_entries(self, count, page=1, order='user_ptime',
+                      asc=0, show_dir=1, entries=None):
         if entries is None:
             entries = []
         loaded_entries = [
             entry for entry in
             self.api._req_files(cid=self.cid,
-                                offset=page,
+                                offset=(page - 1) * self.max_entries_per_load,
                                 limit=self.max_entries_per_load,
-                                o=order,
-                                asc=asc)['data'][:self.max_entries_per_load]
+                                o=order, show_dir=show_dir,
+                                asc=asc)['data'][:count]
         ]
         if count <= self.max_entries_per_load:
             return entries + loaded_entries
         else:
-            return self._load_entries(count - self.max_entries_per_load,
-                                      page + 1, order, asc,
-                                      entries + loaded_entries)
+            cur_count = count - self.max_entries_per_load
+            return self._load_entries(
+                count=cur_count, page=page + 1, order=order, asc=asc,
+                show_dir=show_dir, entries=entries + loaded_entries)
 
-    def list(self, count=30, order='user_ptime', asc=False):
+    def list(self, count=30, order='user_ptime', asc=False, show_dir=True):
         """
         List directory contents
 
+        :param int count: number of entries to be listed
         :param str order: originally named `o`
         :param bool asc:
 
-        Return a list of :class:`.File` or :class:`Directory` objects
+        Return a list of :class:`File` or :class:`Directory` objects
         """
         asc = 1 if asc is True else 0
-        entries = self._load_entries(count, page=0, order=order, asc=asc)
+        show_dir = 1 if show_dir else 0
+        entries = self._load_entries(count, page=1, order=order, asc=asc,
+                                     show_dir=show_dir)
         res = []
         for entry in entries:
             if 'pid' in entry:
@@ -897,7 +898,6 @@ def TorrentFile(Base):
     def __unicode__(self):
         return '[%s] %s' % ('*' if self.selected else ' ', self.path)
 
-# Internal functions
 
 def _instantiate_task(api, kwargs):
     """Create a Task object from raw kwargs"""
