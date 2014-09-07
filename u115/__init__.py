@@ -800,7 +800,7 @@ def _instantiate_file(api, kwargs):
     kwargs['date_created'] = utils.string_to_datetime(kwargs['t'])
     kwargs['pickcode'] = kwargs['pc']
     kwargs['name'] = kwargs['n']
-    kwargs['thumbnail'] = kwargs['u']
+    kwargs['thumbnail'] = kwargs.get('u')
     kwargs['size'] = kwargs['s']
     return File(api, **kwargs)
 
@@ -809,7 +809,6 @@ def _instantiate_directory(api, kwargs):
     """
     n => name
     t => date_created
-    u => thumbnail
     """
     kwargs['name'] = kwargs['n']
     kwargs['date_created'] = utils.get_utcdatetime(kwargs['t'])
