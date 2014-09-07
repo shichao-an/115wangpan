@@ -26,6 +26,10 @@
    :members:
    :undoc-members:
 
+.. autoclass:: Torrent
+   :members:
+   :undoc-members:
+
 .. autoclass:: File
    :members:
    :undoc-members:
@@ -37,6 +41,7 @@
 .. autoclass::  APIError
    :members:
    :undoc-members:
+
 
 """
 
@@ -63,6 +68,7 @@ class RequestHandler(object):
     :ivar session: underlying :class:`requests.Session` instance
 
     """
+
     def __init__(self):
         self.session = requests.Session()
         self.session.headers['User-Agent'] = USER_AGENT
@@ -259,8 +265,9 @@ class API(object):
         :param str torrent: path to torrent file to upload
         """
 
-        uploaded_torrent = self.upload(torrent)
-        return uploaded_torrent
+        u = self.upload(torrent, self.torrents_directory)
+        t = self._load_torrent(u)
+        t.submit()
 
     def add_task_url(self):
         """Added a new URL task (VIP only)"""
@@ -284,7 +291,7 @@ class API(object):
 
     def upload(self, filename, directory=None):
         """
-        Upload a file ``filename`` to a directory
+        Upload a file ``filename`` to ``directory``
 
         :param str filename: path to the file to upload
         :param directory: destionation :class:`Directory`, defaults to
@@ -349,6 +356,50 @@ class API(object):
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
         return res.content
+
+    def _req_lixian_torrent(self, u):
+        """
+        :param u: uploaded torrent file
+        """
+
+        url = 'http://115.com/lixian/'
+        params = {
+            'ct': 'lixian',
+            'ac': 'torrent',
+        }
+        data = {
+            'pickcode': u.pickcode,
+            'sha1': u.sha,
+            'uid': self.passport.user_id,
+            'sign': self._signatures['offline_space'],
+            'time': self._lixian_timestamp,
+        }
+        req = Request(method='POST', url=url, params=params, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise APIError('Failed to open torrent.')
+
+    def _req_lixian_add_task_bt(self, t):
+        pass
+        url = 'http://115.com/lixian/'
+        params = {'ct': 'lixian', 'ac': 'add_task_bt'}
+        wanted = ','.join(['1' if f is True else '0' for f in t.selected])
+        data = {
+            'info_hash': t.info_hash,
+            'wanted': wanted,
+            'savepath': t.name,
+            'uid': self.passport.user_id,
+            'sign': self._signatures['offline_space'],
+            'time': self._lixian_timestamp,
+        }
+        req = Request(method='POST', url=url, params=params, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise APIError('Failed to create new task.')
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=1, code=None, scid=None, snap=0, natsort=None,
@@ -452,6 +503,10 @@ class API(object):
     def _load_upload_url(self):
         res = self._parse_src_js_var('upload_config_h5')
         return res['url']
+
+    def _load_torrent(self, u):
+        res = self._req_lixian_torrent(u)
+        return _instantiate_torrent(self, res)
 
     def _parse_src_js_var(self, variable):
         """Parse JavaScript variables in the source page"""
@@ -700,7 +755,7 @@ class Task(Directory):
     :ivar str name: name of this task
     :ivar int peers: number of peers
     :ivar int percent_done: <=100, originally named `percentDone`
-    :ivar int rate_download: originally named `rateDownload'
+    :ivar int rate_download: originally named `rateDownload`
     :ivar int size: size of task
     :ivar str size_human: human-readable size
     :ivar int status: status code
@@ -761,8 +816,61 @@ class Task(Directory):
             return res
         return 'UNKNOWN STATUS'
 
+
+class Torrent(Base):
+    """
+    Opened torrent before becoming a task
+
+    :ivar api: associated API object
+    :ivar str name: task name, originally named `torrent_name`
+    :ivar int size: task size, originally named `torrent_size`
+    :ivar str info_hash: hashed value
+    :ivar int file_count: number of files included
+    :ivar list files: files included (list of :class:`TorrentFile`),
+        originally named `torrent_filelist_web`
+    """
+
+    def __init__(self, api, name, size, info_hash, file_count, files,
+                 *args, **kwargs):
+        self.name = name
+        self.size = size
+        self.info_hash = info_hash
+        self.file_count = file_count
+        self.files = files
+        self._selected = None
+        self._load_selected()
+
+    def submit(self):
+        """Submit this torrent and create a new task"""
+        self._load_selected()
+        self.api._req_lixian_add_task_bt(self)
+
+    def _load_selected(self):
+        self._selected = [True if f.selected else False for f in self.files]
+
     def __unicode__(self):
         return self.name
+
+
+def TorrentFile(Base):
+    """
+    File in the torrent file list
+
+    :param torrent: the torrent that holds this file
+    :type torrent: :class:`Torrent`
+    :param str path: file path in the torrent
+    :param int size: file size
+    :param bool selected: whether this file is selected
+    """
+    def __init__(self, torrent, path, size, selected=True, *args, **kwargs):
+        self.torrent = torrent
+        self.path = path
+        self.size = size
+        self.size_human = humanize.naturalsize(size, binary=True)
+        self.selected = selected
+
+    def __unicode__(self):
+        return '[%s] %s' ('*' if self.selected else ' ', self.path)
 
 
 def _instantiate_task(api, kwargs):
@@ -789,26 +897,25 @@ def _instantiate_task(api, kwargs):
     return task
 
 
+# Internal functions
+
+
 def _instantiate_file(api, kwargs):
-    """
-    ico => file_type
-    t => date_created
-    n => name
-    """
     kwargs['file_type'] = kwargs['ico']
     kwargs['date_created'] = utils.string_to_datetime(kwargs['t'])
     kwargs['pickcode'] = kwargs['pc']
     kwargs['name'] = kwargs['n']
     kwargs['thumbnail'] = kwargs.get('u')
     kwargs['size'] = kwargs['s']
+    del kwargs['ico']
+    del kwargs['t']
+    del kwargs['pc']
+    del kwargs['u']
+    del kwargs['s']
     return File(api, **kwargs)
 
 
 def _instantiate_directory(api, kwargs):
-    """
-    n => name
-    t => date_created
-    """
     kwargs['name'] = kwargs['n']
     kwargs['date_created'] = utils.get_utcdatetime(float(kwargs['t']))
     kwargs['pickcode'] = kwargs.get('pc')
@@ -826,6 +933,23 @@ def _instantiate_uploaded_file(api, kwargs):
     _, ft = os.path.splitext(kwargs['name'])
     kwargs['file_type'] = ft[1:]
     return File(api, **kwargs)
+
+
+def _instantiate_torrent(api, kwargs):
+    kwargs['size'] = kwargs['torrent_size']
+    kwargs['name'] = kwargs['torrent_name']
+    file_list = kwargs['torrent_filelist_web']
+    kwargs['files'] = [_instantiate_torrent_file(f) for f in file_list]
+    del kwargs['torrent_size']
+    del kwargs['torrent_name']
+    del kwargs['torrent_filelist_web']
+    return Torrent(api, **kwargs)
+
+
+def _instantiate_torrent_file(kwargs):
+    kwargs['selected'] = kwargs['wanted']
+    del kwargs['selected']
+    return TorrentFile(**kwargs)
 
 
 class APIError(Exception):
