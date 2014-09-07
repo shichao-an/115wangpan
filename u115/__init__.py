@@ -259,8 +259,8 @@ class API(object):
         :param str torrent: path to torrent file to upload
         """
 
-        res = self._req_upload(torrent)
-        return res
+        uploaded_torrent = self.upload(torrent)
+        return uploaded_torrent
 
     def add_task_url(self):
         """Added a new URL task (VIP only)"""
@@ -281,6 +281,29 @@ class API(object):
             res['total'] = humanize.naturalsize(res['total'], binary=True)
             res['used'] = humanize.naturalsize(res['used'], binary=True)
         return res
+
+    def upload(self, filename, directory=None):
+        """
+        Upload a file ``filename`` to a directory
+
+        :param str filename: path to the file to upload
+        :param directory: destionation :class:`Directory`, defaults to
+            :class:`API.downloads_directory` if None
+        :return: the uploaded file
+        :rtype: :class:`File`
+        """
+
+        if directory is None:
+            directory = self.downloads_directory
+        # First request
+        res1 = self._req_upload(filename, directory)
+        data1 = res1['data']
+        file_id = data1['file_id']
+        # Second request
+        res2 = self._req_file(file_id)
+        data2 = res2['data'][0]
+        data2.update(**data1)
+        return _instantiate_uploaded_file(self, data2)
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
@@ -334,6 +357,13 @@ class API(object):
         res = self.http.send(req)
         return res
 
+    def _req_file(self, file_id):
+        url = self.web_api_url + '/file'
+        data = {'file_id': file_id}
+        req = Request(method='POST', url=url, data=data)
+        res = self.http.send(req)
+        return res
+
     def _req_directory(self, cid):
         """Return name and pid of by cid"""
         res = self._req_files(cid=cid, offset=0, limit=1)
@@ -362,17 +392,16 @@ class API(object):
         res = self.http.send(req)
         return res.content['1']
 
-    def _req_upload(self, torrent):
-        """Upload a torrent or file"""
+    def _req_upload(self, filename, directory):
+        """Raw request to upload a file ``filename``"""
         self._upload_url = self._load_upload_url()
         self.http.get('http://upload.115.com/crossdomain.xml')
-        b = os.path.basename(torrent)
-        target = 'U_1_' + str(self.torrents_directory.cid)
+        b = os.path.basename(filename)
+        target = 'U_1_' + str(directory.cid)
         files = {
             'Filename': ('', b, ''),
             'target': ('', target, ''),
-            'Filedata': (b, open(torrent, 'rb'),
-                         'application/octet-stream'),
+            'Filedata': (b, open(filename, 'rb'), ''),
             'Upload': ('', 'Submit Query', ''),
         }
         req = Request(method='POST', url=self._upload_url, files=files)
@@ -780,6 +809,17 @@ def _instantiate_directory(api, kwargs):
     kwargs['date_created'] = kwargs['t']
     kwargs['pickcode'] = kwargs.get('pc')
     return Directory(api, **kwargs)
+
+
+def _instantiate_uploaded_file(api, kwargs):
+    kwargs['fid'] = kwargs['file_id']
+    kwargs['name'] = kwargs['file_name']
+    kwargs['pickcode'] = kwargs['pick_code']
+    kwargs['size'] = kwargs['file_size']
+    kwargs['sha'] = kwargs['sha1']
+    kwargs['date_created'] = kwargs['file_ptime']
+    kwargs['thumbnail'] = None
+    return File(api, **kwargs)
 
 
 class APIError(Exception):
