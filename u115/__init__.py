@@ -851,6 +851,7 @@ class Torrent(Base):
                  *args, **kwargs):
         self.name = name
         self.size = size
+        self.size_human = humanize.naturalsize(size, binary=True)
         self.info_hash = info_hash
         self.file_count = file_count
         self.files = files
@@ -884,7 +885,7 @@ def TorrentFile(Base):
     :param int size: file size
     :param bool selected: whether this file is selected
     """
-    def __init__(self, torrent, path, size, selected=True, *args, **kwargs):
+    def __init__(self, torrent, path, size, selected, *args, **kwargs):
         self.torrent = torrent
         self.path = path
         self.size = size
