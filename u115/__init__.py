@@ -263,15 +263,24 @@ class API(object):
 
         return self._load_tasks(count)
 
-    def add_task_bt(self, filename):
+    def add_task_bt(self, filename, select=False):
         """
         Added a new BT task
 
         :param str filename: path to torrent file to upload
+        :param bool select: whether to select files in the torrent.
+
+            * If True, it returns the opened torrent (:class:`Torrent`) and
+                can then iterate files in :attr:`Torrent.files` and
+                select/unselect them before calling :func:`Torrent.submit`
+            * If False, it will submit the torrent with default selected files
+
         """
         filename = utils.eval_path(filename)
         u = self.upload(filename, self.torrents_directory)
         t = self._load_torrent(u)
+        if select:
+            return t
         return t.submit()
 
     def add_task_url(self):
@@ -550,6 +559,9 @@ class API(object):
         text = soup.find_all('script')[6].text
         pattern = "%s = (.*);" % (variable.upper())
         m = re.search(pattern, text)
+        if not m:
+            msg = 'Cannot parse source JavaScript for %s' % variable
+            raise APIError(msg)
         return json.loads(m.group(1).strip())
 
 
@@ -655,6 +667,7 @@ class File(BaseFile):
     :ivar int fid: file id
     :ivar int cid: cid of the current directory
     :ivar int size: size in bytes
+    :ivar str size_human: human-readable size
     :ivar str file_type: originally named `ico`
     :ivar str sha: SHA1 hash
     :ivar datetime.datetime date_created: in "%Y-%m-%d %H:%M:%S" format,
@@ -778,6 +791,8 @@ class Directory(BaseFile):
 
         Return a list of :class:`File` or :class:`Directory` objects
         """
+        if self.cid is None:
+            return False
         asc = 1 if asc is True else 0
         show_dir = 1 if show_dir else 0
         entries = self._load_entries(count, page=1, order=order, asc=asc,
@@ -799,7 +814,7 @@ class Task(Directory):
     :ivar str file_id: equivalent to `cid` of :class:`Directory`. This value
         may be None if the task is failed and has no corresponding directory
     :ivar str info_hash: hashed value
-    :ivar datetime.datetime last_update:
+    :ivar datetime.datetime last_update: last updated time
     :ivar int left_time: left time
     :ivar int move: moving state
 
@@ -914,6 +929,7 @@ class Torrent(Base):
         if self.api._req_lixian_add_task_bt(self):
             self.submitted = True
             return True
+        return False
 
     @property
     def selected_files(self):
@@ -947,6 +963,12 @@ class TorrentFile(Base):
         self.size_human = humanize.naturalsize(size, binary=True)
         self.selected = selected
 
+    def select(self):
+        self.selected = True
+
+    def unselect(self):
+        self.selected = False
+
     def __unicode__(self):
         return '[%s] %s' % ('*' if self.selected else ' ', self.path)
 
@@ -955,11 +977,11 @@ def _instantiate_task(api, kwargs):
     """Create a Task object from raw kwargs"""
     file_id = kwargs['file_id']
     kwargs['file_id'] = file_id if str(file_id).strip() else None
+    kwargs['cid'] = kwargs['file_id']
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['add_time'] = utils.get_utcdatetime(kwargs['add_time'])
     kwargs['last_update'] = utils.get_utcdatetime(kwargs['last_update'])
-    kwargs['cid'] = kwargs['file_id']
     is_transferred = (kwargs['status'] == 2 and kwargs['move'] == 1)
     if is_transferred:
         kwargs['pid'] = api.downloads_directory.cid
