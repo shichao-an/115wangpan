@@ -45,6 +45,7 @@ class TestAPI(TestCase):
         res = self.api.get_storage_info()
         assert 'total' in res
         assert 'used' in res
+
         res = self.api.get_storage_info(human=True)
         assert 'total' in res
         assert 'used' in res
