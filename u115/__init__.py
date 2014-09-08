@@ -199,6 +199,8 @@ class API(object):
         :param str section: section name in the credential file
         :raise: raises :class:`APIError` if failed to login
         """
+        if self.has_logged_in:
+            return True
         if username is None or password is None:
             credential = conf.get_credential(section)
             username = credential['username']
@@ -308,9 +310,11 @@ class API(object):
     def get_storage_info(self, human=False):
         """
         Get storage info
+
         :param bool human: whether return human-readable size
         :return: total and used storage
         :rtype: dict
+
         """
         res = self._req_get_storage_info()
         if human:
@@ -776,7 +780,7 @@ class Directory(BaseFile):
         super(Directory, self).__init__(api, cid, name)
 
         self.pid = pid
-        self.count = count
+        self._count = count
         if date_created is not None:
             self.date_created = date_created
         self.pickcode = pickcode
@@ -790,11 +794,16 @@ class Directory(BaseFile):
                 self._parent = self.api._load_directory(self.pid)
         return self._parent
 
+    @property
+    def count(self):
+        return self._count
+
     def reload(self):
         """Reload directory info (name and pid)"""
         r = self.api._req_directory(self.cid)
         self.pid = r['pid']
         self.name = r['name']
+        self.count = r['count']
 
     def _load_entries(self, count, page=1, order='user_ptime',
                       asc=0, show_dir=1, entries=None):
@@ -898,6 +907,7 @@ class Task(Directory):
         self.status = status
         self._directory = None
         self._deleted = False
+        self._count = -1
 
     def delete(self):
         """
@@ -950,6 +960,8 @@ class Task(Directory):
                 res = 'BEING TRANSFERRED'
             elif self.move == 1:
                 res = 'TRANSFERRED'
+            elif self.move == 2:
+                res = 'PARTIALLY TRANSFERRED'
         elif self.status == 4:
             res = 'SEARCHING RESOURCES'
         elif self.status == -1:
@@ -965,10 +977,20 @@ class Task(Directory):
             if self.is_transferred:
                 self._directory = self.api._load_directory(self.cid)
         if self._directory is None:
-            msg = 'No directory corresponding to this task. Task is %s.' % \
+            msg = 'No directory corresponding to this task: Task is %s.' % \
                 self.status_human.lower()
             raise APIError(msg)
         return self._directory
+
+    @property
+    def parent(self):
+        """Parent directory of the corresponding directory"""
+        return self.directory.parent
+
+    @property
+    def count(self):
+        """Number of entries in the corresponding directory"""
+        return self.directory.count
 
     def list(self, count=30, order='user_ptime', asc=False, show_dir=True):
         """
