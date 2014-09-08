@@ -432,7 +432,7 @@ class API(object):
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
-        req = Request(method='{POST', url=url, params=params, data=data)
+        req = Request(method='POST', url=url, params=params, data=data)
         res = self.http.send(req)
         if res.state:
             return True
@@ -878,10 +878,21 @@ class Task(Directory):
         self._deleted = False
 
     def delete(self):
+        """
+        Delete task (does not influence its corresponding directory)
+
+        :return: whether deletion is successful
+        :raise: :class:`APIError` if the task is already deleted
+        """
         if not self._deleted:
             if self.api._req_lixian_task_del(self):
                 self._deleted = True
-        return False
+                return True
+        return APIError('This task is already deleted.')
+
+    @property
+    def is_deleted(self):
+        return self._deleted
 
     @property
     def is_transferred(self):
