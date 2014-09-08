@@ -184,6 +184,8 @@ class API(object):
         self._lixian_timestamp = None
         self._downloads_directory = None
         self._torrents_directory = None
+        self._task_count = None
+        self._task_quota = None
 
     def login(self, username=None, password=None,
               section='default'):
@@ -252,6 +254,22 @@ class API(object):
         if self._torrents_directory is None:
             self._load_lixian_space()
         return self._torrents_directory
+
+    @property
+    def task_count(self):
+        """
+        Number of tasks created
+        """
+        self._req_lixian_task_lists()
+        return self._task_count
+
+    @property
+    def task_quota(self):
+        """
+        Task quota
+        """
+        self._req_lixian_task_lists()
+        return self._task_quota
 
     def get_tasks(self, count=30):
         """
@@ -355,6 +373,8 @@ class API(object):
         req = Request(method='POST', url=url, params=params, data=data)
         res = self.http.send(req)
         if res.state:
+            self._task_count = res.content['count']
+            self._task_quota = res.content['quota']
             return res.content['tasks']
 
     def _req_lixian_get_id(self, torrent=False):
@@ -528,11 +548,13 @@ class API(object):
     def _load_tasks(self, count, page=1, tasks=None):
         if tasks is None:
             tasks = []
-        loaded_tasks = [
-            _instantiate_task(self, t) for t in
-            self._req_lixian_task_lists(page)[:count]
-        ]
-        if count <= self.num_tasks_per_page:
+        req_tasks = self._req_lixian_task_lists(page)
+        loaded_tasks = []
+        if req_tasks is not None:
+            loaded_tasks = [
+                _instantiate_task(self, t) for t in req_tasks[:count]
+            ]
+        if count <= self.num_tasks_per_page or req_tasks is None:
             return tasks + loaded_tasks
         else:
             return self._load_tasks(count - self.num_tasks_per_page,
