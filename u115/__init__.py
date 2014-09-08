@@ -278,9 +278,6 @@ class API(object):
         """Added a new URL task (VIP only)"""
         raise NotImplementedError
 
-    def delete_task(self):
-        pass
-
     def get_storage_info(self, human=False):
         """
         Get storage info
@@ -422,7 +419,7 @@ class API(object):
         params = {'ct': 'lixian', 'ac': 'task_del'}
         data = {
             'hash[0]': t.info_hash,
-            'uid': t.passport.user_id,
+            'uid': self.passport.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
@@ -799,11 +796,17 @@ class Task(Directory):
     BitTorrent or URL task
 
     :ivar datetime.datetime add_time: added time
-    :ivar str file_id: equivalent to `cid` of :class:`Directory`
+    :ivar str file_id: equivalent to `cid` of :class:`Directory`. This value
+        may be None if the task is failed and has no corresponding directory
     :ivar str info_hash: hashed value
     :ivar datetime.datetime last_update:
     :ivar int left_time: left time
-    :ivar int move: 1 (transferred) or 0 (not transferred)
+    :ivar int move: moving state
+
+        * 0: not transferred
+        * 1: transferred
+        * 2: partially transferred
+
     :ivar str name: name of this task
     :ivar int peers: number of peers
     :ivar int percent_done: <=100, originally named `percentDone`
@@ -831,7 +834,15 @@ class Task(Directory):
         self.size = size
         self.size_human = humanize.naturalsize(size, binary=True)
         self.status = status
+        self._deleted = False
 
+    def delete(self):
+        if not self._deleted:
+            if self.api._req_lixian_task_del(self):
+                self._deleted = True
+        return False
+
+    @property
     def is_transferred(self):
         """
         :return: whether this tasks has been transferred
@@ -851,12 +862,15 @@ class Task(Directory):
                     directory
             * `SEARCHING RESOURCES`
             * `FAILED`
+            * `DELETED`
             * `UNKNOWN STATUS`
 
         :rtype: str
 
         """
         res = None
+        if self._deleted:
+            return 'DELETED'
         if self.status == 2:
             if self.move == 0:
                 res = 'BEING TRANSFERRED'
@@ -939,6 +953,8 @@ class TorrentFile(Base):
 
 def _instantiate_task(api, kwargs):
     """Create a Task object from raw kwargs"""
+    file_id = kwargs['file_id']
+    kwargs['file_id'] = file_id if str(file_id).strip() else None
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['add_time'] = utils.get_utcdatetime(kwargs['add_time'])
