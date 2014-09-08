@@ -49,3 +49,21 @@ class TestAPI(TestCase):
         res = self.api.get_storage_info(human=True)
         assert 'total' in res
         assert 'used' in res
+
+
+class TestPrivateAPI(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestPrivateAPI, self).__init__(*args, **kwargs)
+        self.api = API()
+        self.api.login(section='test')
+
+    def test_req_offline_space(self):
+        self.api._signatures = {}
+        self.api._lixian_timestamp = None
+        func = getattr(self.api, '_req_offline_space')
+        func()
+        assert 'offline_space' in self.api._signatures
+        assert self.api._lixian_timestamp is not None
+
+    def test_load_interfaces(self):
+        pass
