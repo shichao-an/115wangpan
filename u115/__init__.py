@@ -415,6 +415,24 @@ class API(object):
             print res.content.get('error_msg')
             raise APIError('Failed to create new task.')
 
+    def _req_lixian_task_del(self, t):
+
+        self._load_signatures()
+        url = 'http://115.com/lixian/'
+        params = {'ct': 'lixian', 'ac': 'task_del'}
+        data = {
+            'hash[0]': t.info_hash,
+            'uid': t.passport.user_id,
+            'sign': self._signatures['offline_space'],
+            'time': self._lixian_timestamp,
+        }
+        req = Request(method='{POST', url=url, params=params, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return True
+        else:
+            raise APIError('Failed to delete the task.')
+
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=1, code=None, scid=None, snap=0, natsort=None,
                    source=None):
