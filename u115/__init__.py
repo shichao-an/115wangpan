@@ -465,9 +465,18 @@ class API(object):
         """Return name and pid of by cid"""
         res = self._req_files(cid=cid, offset=0, limit=1, show_dir=1)
         path = res['path']
+        count = res['count']
         for d in path:
             if str(d['cid']) == str(cid):
-                return {'cid': d['cid'], 'name': d['name'], 'pid': d['pid']}
+                res = {
+                    'cid': d['cid'],
+                    'name': d['name'],
+                    'pid': d['pid'],
+                    'count': count,
+                }
+                return res
+        else:
+            raise APIError('No directory found.')
 
     def _req_files_download_url(self, pickcode):
         url = self.web_api_url + '/download'
@@ -731,17 +740,21 @@ class Directory(BaseFile):
     """
     :ivar int cid: cid of this directory
     :ivar int pid: represents the parent directory it belongs to
+    :ivar int count: number of entries in this directory
     :ivar datetime.datetime date_created: integer, originally named `t`
     :ivar str pickcode: string, originally named `pc`
 
     """
-    max_entries_per_load = 10
 
-    def __init__(self, api, cid, name, pid, date_created=None, pickcode=None,
+    max_entries_per_load = 24  # Smaller than 24 may cause abnormal result
+
+    def __init__(self, api, cid, name, pid, count=0,
+                 date_created=None, pickcode=None,
                  *args, **kwargs):
         super(Directory, self).__init__(api, cid, name)
 
         self.pid = pid
+        self.count = count
         if date_created is not None:
             self.date_created = date_created
         self.pickcode = pickcode
@@ -763,6 +776,14 @@ class Directory(BaseFile):
 
     def _load_entries(self, count, page=1, order='user_ptime',
                       asc=0, show_dir=1, entries=None):
+        """
+        Load entries
+
+        :param int count: number of entries to load. This value should never
+            be greater than self.count
+        :param int page: page number (starting from 0)
+
+        """
         if entries is None:
             entries = []
         loaded_entries = [
@@ -787,7 +808,8 @@ class Directory(BaseFile):
 
         :param int count: number of entries to be listed
         :param str order: originally named `o`
-        :param bool asc:
+        :param bool asc: whether in ascending order
+        :param bool show_dir: whether to show directories
 
         Return a list of :class:`File` or :class:`Directory` objects
         """
@@ -795,6 +817,9 @@ class Directory(BaseFile):
             return False
         asc = 1 if asc is True else 0
         show_dir = 1 if show_dir else 0
+        if self.count <= count:
+            # count should never be greater than self.count
+            count = self.count
         entries = self._load_entries(count, page=1, order=order, asc=asc,
                                      show_dir=show_dir)
         res = []
@@ -849,6 +874,7 @@ class Task(Directory):
         self.size = size
         self.size_human = humanize.naturalsize(size, binary=True)
         self.status = status
+        self._directory = None
         self._deleted = False
 
     def delete(self):
@@ -898,6 +924,30 @@ class Task(Directory):
         if res is not None:
             return res
         return 'UNKNOWN STATUS'
+
+    @property
+    def directory(self):
+        """Corresponding directory to this task"""
+        if self._directory is None:
+            if self.is_transferred:
+                self._directory = self.api._load_directory(self.cid)
+        if self._directory is None:
+            msg = 'No directory corresponding to this task. Task is %s.' % \
+                self.status_human.lower()
+            raise APIError(msg)
+        return self._directory
+
+    def list(self, count=30, order='user_ptime', asc=False, show_dir=True):
+        """
+        List files of the corresponding directory to this task.
+
+        :param int count: number of entries to be listed
+        :param str order: originally named `o`
+        :param bool asc: whether in ascending order
+        :param bool show_dir: whether to show directories
+
+        """
+        return self.directory.list(count, order, asc, show_dir)
 
 
 class Torrent(Base):
@@ -1005,8 +1055,9 @@ def _instantiate_file(api, kwargs):
     del kwargs['ico']
     del kwargs['t']
     del kwargs['pc']
-    del kwargs['u']
     del kwargs['s']
+    if 'u' in kwargs:
+        del kwargs['u']
     return File(api, **kwargs)
 
 
