@@ -536,7 +536,6 @@ class API(object):
             'Filedata': (utils.quote(b), open(filename, 'rb'), ''),
             'Upload': ('', 'Submit Query', ''),
         }
-        print files
         req = Request(method='POST', url=self._upload_url, files=files)
         res = self.http.send(req)
         if res.state:
@@ -778,7 +777,7 @@ class Directory(BaseFile):
 
     max_entries_per_load = 24  # Smaller than 24 may cause abnormal result
 
-    def __init__(self, api, cid, name, pid, count=0,
+    def __init__(self, api, cid, name, pid, count=-1,
                  date_created=None, pickcode=None,
                  *args, **kwargs):
         super(Directory, self).__init__(api, cid, name)
@@ -800,14 +799,24 @@ class Directory(BaseFile):
 
     @property
     def count(self):
+        """Number of entries in this directory"""
+        if self._count == -1:
+            self.reload()
         return self._count
 
     def reload(self):
-        """Reload directory info (name and pid)"""
+        """
+        Reload directory info and metadata
+
+        * `name`
+        * `pid`
+        * `count`
+
+        """
         r = self.api._req_directory(self.cid)
         self.pid = r['pid']
         self.name = r['name']
-        self.count = r['count']
+        self._count = r['count']
 
     def _load_entries(self, count, page=1, order='user_ptime',
                       asc=0, show_dir=1, entries=None):
