@@ -9,12 +9,12 @@ SMALL_COUNT = 2
 test_dir = pjoin(conf.project_path, 'tests')
 data_dir = pjoin(test_dir, 'data')
 test_torrent1 = {
-    'filename': pjoin(data_dir, 'SAOII_10.torrent'),
+    'filename': pjoin(data_dir, u'SAOII_10.torrent'),
     'info_hash': '6bcc605d8fd8629b4df92202d554e5812e78df25',
 }
 
 test_torrent2 = {
-    'filename': pjoin(data_dir, 'オリジナルサウンドトラック (320K+BK).torrent'),
+    'filename': pjoin(data_dir, u'オリジナルサウンドトラック (320K+BK).torrent'),
     'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
 }
 
@@ -53,7 +53,7 @@ class TestAPI(TestCase):
             assert p.cid == dd.cid
             assert t.count == len(t.list(LARGE_COUNT))
         for t in tasks:
-            if t.info_hash == test_torrent2['file_name']:
+            if t.info_hash == test_torrent2['filename']:
                 td = t.directory
                 entries = td.list()
                 for entry in entries:
@@ -76,7 +76,7 @@ class TestAPI(TestCase):
         assert self.api.add_task_bt(test_torrent1['filename'])
         u = self.api.add_task_bt(test_torrent2['filename'], select=True)
         assert isinstance(u, Torrent)
-        files = u.torrent
+        files = u.files
         file_count = u.file_count
         files[0].unselect()
         files[1].unselect()
