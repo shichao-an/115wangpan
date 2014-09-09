@@ -548,6 +548,22 @@ class API(object):
                 msg = 'Torrent upload failed. Please try again later.'
             raise APIError(msg)
 
+    def _req_rb_delete(self, fcid, pid):
+
+        url = 'http://web.api.115.com/rb/delete'
+        data = {
+            'pid': pid,
+            'fid[0]': fcid,
+        }
+        req = Request(method='POST', url=url, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return True
+        else:
+            msg = 'Failed to delete this file or directory.'
+            print res.content['error']
+            raise APIError(msg)
+
     def _load_signatures(self, force=True):
         if not self._signatures or force:
             self._req_offline_space()
@@ -693,6 +709,10 @@ class BaseFile(Base):
         self.api = api
         self.cid = cid
         self.name = name
+
+    def delete(self):
+        """Delete file or directory"""
+        pass
 
     def __unicode__(self):
         return self.name
