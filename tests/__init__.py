@@ -65,5 +65,6 @@ class TestPrivateAPI(TestCase):
         assert 'offline_space' in self.api._signatures
         assert self.api._lixian_timestamp is not None
 
-    def test_load_interfaces(self):
-        pass
+    def test_load_upload_url(self):
+        url = self.api._load_upload_url()
+        assert url

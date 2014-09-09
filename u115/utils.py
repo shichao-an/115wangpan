@@ -1,6 +1,7 @@
 import datetime
 import os
 import time
+from requests.utils import quote as _quote
 
 
 def get_timestamp(length):
@@ -21,3 +22,10 @@ def string_to_datetime(s):
 
 def eval_path(path):
     return os.path.abspath(os.path.expanduser(path))
+
+
+def quote(s):
+    res = s
+    if type(s) is unicode:
+        res = s.encode('utf-8')
+    return _quote(res)

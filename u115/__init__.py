@@ -380,9 +380,12 @@ class API(object):
             self._task_count = res.content['count']
             self._task_quota = res.content['quota']
             return res.content['tasks']
+        else:
+            msg = 'Failed to get tasks.'
+            raise APIError(msg)
 
     def _req_lixian_get_id(self, torrent=False):
-        """Get `cid' of lixian space directory"""
+        """Get `cid` of lixian space directory"""
         url = 'http://115.com/lixian/'
         params = {
             'ct': 'lixian',
@@ -528,11 +531,12 @@ class API(object):
         b = os.path.basename(filename)
         target = 'U_1_' + str(directory.cid)
         files = {
-            'Filename': ('', b, ''),
+            'Filename': ('', utils.quote(b), ''),
             'target': ('', target, ''),
-            'Filedata': (b, open(filename, 'rb'), ''),
+            'Filedata': (utils.quote(b), open(filename, 'rb'), ''),
             'Upload': ('', 'Submit Query', ''),
         }
+        print files
         req = Request(method='POST', url=self._upload_url, files=files)
         res = self.http.send(req)
         if res.state:
