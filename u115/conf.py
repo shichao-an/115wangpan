@@ -1,11 +1,12 @@
 import ConfigParser
 import os
+from u115.utils import pjoin, eval_path
 
 _d = os.path.dirname(__file__)
-user_dir = os.path.join(os.path.expanduser('~'))
-project_path = os.path.abspath(os.path.join(_d, os.pardir))
-project_credentials = os.path.join(project_path, '.credentials')
-user_credentials = os.path.join(user_dir, '.115')
+user_dir = eval_path('~')
+project_path = os.path.abspath(pjoin(_d, os.pardir))
+project_credentials = pjoin(project_path, '.credentials')
+user_credentials = pjoin(user_dir, '.115')
 
 credentials = None
 

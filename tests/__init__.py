@@ -1,10 +1,22 @@
+# -*- coding: utf-8 -*-
 from unittest import TestCase
-from u115 import API
+from u115 import API, Torrent, Directory, File
 from u115 import conf
+from u115.utils import pjoin
 
-LARGER_THAN_TASK_COUNT = 999
-SMALLER_THAN_TASK_COUNT = 5
-LARGER_THAN_DIR_COUNT = 999
+LARGE_COUNT = 999
+SMALL_COUNT = 2
+test_dir = pjoin(conf.project_path, 'tests')
+data_dir = pjoin(test_dir, 'data')
+test_torrent1 = {
+    'filename': pjoin(data_dir, 'SAOII_10.torrent'),
+    'info_hash': '6bcc605d8fd8629b4df92202d554e5812e78df25',
+}
+
+test_torrent2 = {
+    'filename': pjoin(data_dir, 'オリジナルサウンドトラック (320K+BK).torrent'),
+    'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
+}
 
 
 class TestAPI(TestCase):
@@ -28,10 +40,10 @@ class TestAPI(TestCase):
 
     def test_tasks_directories(self):
         task_count = self.api.task_count
-        tasks = self.api.get_tasks(LARGER_THAN_TASK_COUNT)
+        tasks = self.api.get_tasks(LARGE_COUNT)
         self.assertEqual(len(tasks), task_count)
-        tasks = self.api.get_tasks(SMALLER_THAN_TASK_COUNT)
-        self.assertEqual(len(tasks), SMALLER_THAN_TASK_COUNT)
+        tasks = self.api.get_tasks(SMALL_COUNT)
+        self.assertEqual(len(tasks), SMALL_COUNT)
         t = tasks[0]
         dd = self.api.downloads_directory
         if t.status_human == 'TRANSFERRED':
@@ -39,7 +51,37 @@ class TestAPI(TestCase):
             p = t.parent
             assert d.parent is p
             assert p.cid == dd.cid
-            assert t.count == len(t.list(LARGER_THAN_DIR_COUNT))
+            assert t.count == len(t.list(LARGE_COUNT))
+        for t in tasks:
+            if t.info_hash == test_torrent2['file_name']:
+                td = t.directory
+                entries = td.list()
+                for entry in entries:
+                    assert isinstance(entry, Directory)
+                    files = entry.list()
+                    f = files[0]
+                    assert isinstance(f, File)
+                    assert f.get_download_url()
+                    break
+
+    def test_add_delete_task_bt(self):
+        h1 = test_torrent1['info_hash']
+        h2 = test_torrent2['info_hash']
+        tasks = self.api.get_tasks()
+        for task in tasks:
+            if task.info_hash == h1:
+                assert task.delete()
+            if task.info_hash == h2:
+                assert task.delete()
+        assert self.api.add_task_bt(test_torrent1['filename'])
+        u = self.api.add_task_bt(test_torrent2['filename'], select=True)
+        assert isinstance(u, Torrent)
+        files = u.torrent
+        file_count = u.file_count
+        files[0].unselect()
+        files[1].unselect()
+        assert len(u.selected_files) == file_count - 2
+        assert u.submit()
 
     def test_storage_info(self):
         res = self.api.get_storage_info()

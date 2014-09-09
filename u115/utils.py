@@ -29,3 +29,8 @@ def quote(s):
     if type(s) is unicode:
         res = s.encode('utf-8')
     return _quote(res)
+
+
+def pjoin(*args):
+    """Short cut for os.path.join"""
+    return os.path.join(*args)
