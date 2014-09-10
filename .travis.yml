@@ -1,6 +1,5 @@
 language: python
 env:
-  matrix:
   - TRAVIS_TEST=1
   - TEST_USER_USERNAME=shichao.an.nyu@gmail.com
   global:
