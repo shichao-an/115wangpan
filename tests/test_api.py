@@ -65,6 +65,24 @@ class TestAPI(TestCase):
                     assert f.get_download_url()
                     break
 
+    def test_delete_file(self):
+        tasks = self.api.get_tasks()
+        for t in tasks:
+            if t.info_hash == TEST_TORRENT2['filename']:
+                # Delete file
+                d1 = t.directory
+                d1_count = d1.count
+                d2 = d1.list()[1]
+                d2_count = d2.count
+                files = d2.list()
+                f1 = files[0]
+                assert f1.delete()
+                d2.reload()
+                assert d2.count == d2_count - 1
+                assert d2.delete()
+                d1.reload()
+                assert d1.count == d1_count - 1
+
     def test_add_delete_task_bt(self):
         h1 = TEST_TORRENT1['info_hash']
         h2 = TEST_TORRENT2['info_hash']
