@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from twphotos import __version__
+from u115 import __version__
 
 
 setup(
