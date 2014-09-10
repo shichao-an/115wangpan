@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals, absolute_import
 
 import humanize
 import json
@@ -69,7 +70,7 @@ class RequestHandler(object):
             except ValueError:
                 # No JSON-encoded data returned
                 if expect_json:
-                    print r.content
+                    print(r.content)
                     raise APIError('Invalid API access.')
                 return Response(False, r.content)
         else:
@@ -402,7 +403,7 @@ class API(object):
         if res.state:
             return True
         else:
-            print res.content.get('error_msg')
+            print(res.content.get('error_msg'))
             raise APIError('Failed to create new task.')
 
     def _req_lixian_task_del(self, t):
@@ -518,7 +519,7 @@ class API(object):
             return True
         else:
             msg = 'Failed to delete this file or directory.'
-            print res.content['error']
+            print(res.content['error'])
             raise APIError(msg)
 
     def _load_signatures(self, force=True):

@@ -1,4 +1,10 @@
-import ConfigParser
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals, absolute_import
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 import os
 from u115.utils import pjoin, eval_path
 
@@ -7,7 +13,6 @@ user_dir = eval_path('~')
 PROJECT_PATH = os.path.abspath(pjoin(_d, os.pardir))
 PROJECT_CREDENTIALS = pjoin(PROJECT_PATH, '.credentials')
 USER_CREDENTIALS = pjoin(user_dir, '.115')
-
 CREDENTIALS = None
 
 if os.path.exists(PROJECT_CREDENTIALS):
@@ -15,7 +20,7 @@ if os.path.exists(PROJECT_CREDENTIALS):
 elif os.path.exists(USER_CREDENTIALS):
     CREDENTIALS = USER_CREDENTIALS
 
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 
 
 def get_credential(section='default'):
