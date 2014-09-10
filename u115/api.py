@@ -6,7 +6,6 @@ import json
 import os
 import re
 import requests
-import six
 import time
 from hashlib import sha1
 from bs4 import BeautifulSoup
@@ -221,7 +220,7 @@ class API(object):
     @property
     def task_quota(self):
         """
-        Task quota
+        Task quota (monthly)
         """
         self._req_lixian_task_lists()
         return self._task_quota
@@ -351,7 +350,7 @@ class API(object):
             'ct': 'lixian',
             'ac': 'get_id',
             'torrent': 1 if torrent else None,
-            '_': get_utcdatetime(13)
+            '_': get_timestamp(13)
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)

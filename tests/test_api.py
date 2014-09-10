@@ -54,7 +54,7 @@ class TestAPI(TestCase):
             assert p.cid == dd.cid
             assert t.count == len(t.list(LARGE_COUNT))
         for t in tasks:
-            if t.info_hash == TEST_TORRENT2['filename']:
+            if t.info_hash == TEST_TORRENT2['info_hash']:
                 td = t.directory
                 entries = td.list()
                 for entry in entries:
@@ -68,7 +68,7 @@ class TestAPI(TestCase):
     def test_delete_file(self):
         tasks = self.api.get_tasks()
         for t in tasks:
-            if t.info_hash == TEST_TORRENT2['filename']:
+            if t.info_hash == TEST_TORRENT2['info_hash']:
                 # Delete file
                 d1 = t.directory
                 d1_count = d1.count
