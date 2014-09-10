@@ -1,6 +1,8 @@
 115 Wangpan
 ===========
 
+|Build| |PyPI version|
+
 Unofficial Python API for 115.com, mainly pertinent to its "Lixian" (offline) features. Currently, only limited features have been implemented.
 
 Features
@@ -12,6 +14,9 @@ Features
 
 Installation
 ------------
+.. code-block:: bash
+
+    $ pip install 115wangpan
 
 Usage
 -----
@@ -19,7 +24,8 @@ Usage
 
     >>> import u115
     >>> api = u115.API()
-    >>> api.login('yourname@example.com', 'yourpassword')
+    >>> api.login('username@example.com', 'password')
+    True
     >>> tasks = api.get_tasks()
     >>> task = tasks[0]
     >>> print task.name
@@ -38,3 +44,9 @@ Usage
     <Directory: 咲-Saki- 阿知賀編 episode of side-A>
     >>> f.directory.parent
     <Directory: 离线下载>
+
+
+.. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
+   :target: http://travis-ci.org/shichao-an/115wangpan
+.. |PyPI version| image:: https://pypip.in/v/115wangpan/badge.png
+   :target: https://crate.io/packages/115wangpan

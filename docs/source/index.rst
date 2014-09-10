@@ -14,8 +14,8 @@ Contents
 .. toctree::
    :maxdepth: 4 
 
+   quickstart
    api
-
 
 Indices and tables
 ==================
