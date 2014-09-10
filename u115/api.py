@@ -254,7 +254,14 @@ class API(object):
         return t.submit()
 
     def add_task_url(self):
-        """Added a new URL task (VIP only)"""
+        """
+        Added a new URL task (VIP only)
+
+        .. warning::
+
+           This method has not yet implemented.
+
+        """
         raise NotImplementedError
 
     def get_storage_info(self, human=False):
@@ -662,12 +669,23 @@ class BaseFile(Base):
         self._deleted = False
 
     def delete(self):
-        """Delete file or directory"""
-        self.api._req_rb(self.cid)
+        """
+        Delete this file or directory
+
+        :return: whether deletion is successful
+        :raise: :class:`.APIError` if this file or directory is already deleted
+
+        """
+        if not self._deleted:
+            if self.api._req_rb_delete(self):
+                self._deleted = True
+                return True
+        return APIError('This file or directory is already deleted.')
 
     @property
     def is_deleted(self):
-        pass
+        """Whether this file or directory is deleted"""
+        return self._deleted
 
     def __unicode__(self):
         return self.name
