@@ -10,9 +10,12 @@ Features
 * Tasks management (BitTorrent currently supported)
 * File management
 
+Installation
+------------
+
 Usage
 -----
-::
+.. code-block:: python
 
     >>> import u115
     >>> api = u115.API()
@@ -21,6 +24,8 @@ Usage
     >>> task = tasks[0]
     >>> print task.name
     咲-Saki- 阿知賀編 episode of side-A
+    >>> print task.status_human
+    TRANSFERRED
     >>> print task.size_human
     1.6 GiB
     >>> files = task.list()
