@@ -24,7 +24,13 @@ config = configparser.ConfigParser()
 
 
 def get_credential(section='default'):
-    if CREDENTIALS is not None:
+    if os.environ.get('TRAVIS_TEST'):
+        username = os.environ.get('TEST_USER_USERNAME')
+        password = os.environ.get('TEST_USER_PASSWORD')
+        if username is None or password is None:
+            msg = 'No credentials environment variables found.'
+            raise ConfigError(msg)
+    elif CREDENTIALS is not None:
         config.read(CREDENTIALS)
         if config.has_section(section):
             items = dict(config.items(section))
