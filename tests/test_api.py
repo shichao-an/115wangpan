@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from unittest import TestCase
-from u115 import API, Torrent, Directory, File
-from u115 import conf
+from u115.api import API, Torrent, Directory, File
 from u115.utils import pjoin
+from u115 import conf
+
 
 LARGE_COUNT = 999
 SMALL_COUNT = 2
