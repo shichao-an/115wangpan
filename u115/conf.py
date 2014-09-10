@@ -4,23 +4,23 @@ from u115.utils import pjoin, eval_path
 
 _d = os.path.dirname(__file__)
 user_dir = eval_path('~')
-project_path = os.path.abspath(pjoin(_d, os.pardir))
-project_credentials = pjoin(project_path, '.credentials')
-user_credentials = pjoin(user_dir, '.115')
+PROJECT_PATH = os.path.abspath(pjoin(_d, os.pardir))
+PROJECT_CREDENTIALS = pjoin(PROJECT_PATH, '.credentials')
+USER_CREDENTIALS = pjoin(user_dir, '.115')
 
-credentials = None
+CREDENTIALS = None
 
-if os.path.exists(project_credentials):
-    credentials = project_credentials
-elif os.path.exists(user_credentials):
-    credentials = user_credentials
+if os.path.exists(PROJECT_CREDENTIALS):
+    CREDENTIALS = PROJECT_CREDENTIALS
+elif os.path.exists(USER_CREDENTIALS):
+    CREDENTIALS = USER_CREDENTIALS
 
 config = ConfigParser.ConfigParser()
 
 
 def get_credential(section='default'):
-    if credentials is not None:
-        config.read(credentials)
+    if CREDENTIALS is not None:
+        config.read(CREDENTIALS)
         if config.has_section(section):
             items = dict(config.items(section))
             try:

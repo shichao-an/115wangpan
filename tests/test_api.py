@@ -7,15 +7,15 @@ from u115 import conf
 
 LARGE_COUNT = 999
 SMALL_COUNT = 2
-test_dir = pjoin(conf.project_path, 'tests')
-data_dir = pjoin(test_dir, 'data')
-test_torrent1 = {
-    'filename': pjoin(data_dir, u'SAOII_10.torrent'),
+TEST_DIR = pjoin(conf.project_path, 'tests')
+DATA_DIR = pjoin(TEST_DIR, 'data')
+TEST_TORRENT1 = {
+    'filename': pjoin(DATA_DIR, u'SAOII_10.torrent'),
     'info_hash': '6bcc605d8fd8629b4df92202d554e5812e78df25',
 }
 
-test_torrent2 = {
-    'filename': pjoin(data_dir, u'オリジナルサウンドトラック (320K+BK).torrent'),
+TEST_TORRENT2 = {
+    'filename': pjoin(DATA_DIR, u'オリジナルサウンドトラック (320K+BK).torrent'),
     'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
 }
 
@@ -54,7 +54,7 @@ class TestAPI(TestCase):
             assert p.cid == dd.cid
             assert t.count == len(t.list(LARGE_COUNT))
         for t in tasks:
-            if t.info_hash == test_torrent2['filename']:
+            if t.info_hash == TEST_TORRENT2['filename']:
                 td = t.directory
                 entries = td.list()
                 for entry in entries:
@@ -66,16 +66,16 @@ class TestAPI(TestCase):
                     break
 
     def test_add_delete_task_bt(self):
-        h1 = test_torrent1['info_hash']
-        h2 = test_torrent2['info_hash']
+        h1 = TEST_TORRENT1['info_hash']
+        h2 = TEST_TORRENT2['info_hash']
         tasks = self.api.get_tasks()
         for task in tasks:
             if task.info_hash == h1:
                 assert task.delete()
             if task.info_hash == h2:
                 assert task.delete()
-        assert self.api.add_task_bt(test_torrent1['filename'])
-        u = self.api.add_task_bt(test_torrent2['filename'], select=True)
+        assert self.api.add_task_bt(TEST_TORRENT1['filename'])
+        u = self.api.add_task_bt(TEST_TORRENT2['filename'], select=True)
         assert isinstance(u, Torrent)
         files = u.files
         file_count = u.file_count
