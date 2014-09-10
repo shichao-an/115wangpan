@@ -1,7 +1,8 @@
-from __future__ import print_function, unicode_literals, absolute_import
+from __future__ import print_function, absolute_import
 import datetime
 import os
 import six
+import sys
 import time
 from requests.utils import quote as _quote
 
@@ -43,3 +44,29 @@ def utf8_encode(s):
 def pjoin(*args):
     """Short cut for os.path.join"""
     return os.path.join(*args)
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    import codecs
+    from io import BytesIO as StringIO
+    # return s converted to binary.  b('test') should be equivalent to b'test'
+    def b(s):
+        return codecs.latin_1_encode(s)[0]
+
+    bin_type = bytes
+    txt_type   = str
+else:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
+    # Conversion to binary only necessary in Python 3
+    def b(s):
+        return s
+
+    bin_type = str
+    txt_type = unicode
+
+str_types = (bin_type, txt_type)

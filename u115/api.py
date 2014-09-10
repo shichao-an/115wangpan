@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, absolute_import
+from __future__ import print_function, absolute_import
 
 import humanize
 import json
@@ -12,7 +12,7 @@ from hashlib import sha1
 from bs4 import BeautifulSoup
 from u115 import conf
 from u115.utils import (get_timestamp, get_utcdatetime, string_to_datetime,
-                        eval_path, quote, utf8_encode)
+                        eval_path, quote, utf8_encode, txt_type, PY3)
 
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) \
 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
@@ -590,8 +590,11 @@ class Base(object):
 
     def __str__(self):
         if hasattr(self, '__unicode__'):
-            return six.u(self).encode('utf-8')
-        return '%s object' % self.__class__.__name__
+            if PY3:
+                return self.__unicode__()
+            else:
+                return unicode(self).encode('utf-8')
+        return txt_type('%s object' % self.__class__.__name__)
 
 
 class Passport(Base):
