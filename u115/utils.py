@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals, absolute_import
 import datetime
 import os
+import six
 import time
 from requests.utils import quote as _quote
 
@@ -27,9 +28,16 @@ def eval_path(path):
 
 def quote(s):
     res = s
-    if type(s) is unicode:
+    if isinstance(res, six.text_type):
         res = s.encode('utf-8')
     return _quote(res)
+
+
+def utf8_encode(s):
+    res = s
+    if isinstance(res, six.text_type):
+        res = s.encode('utf-8')
+    return res
 
 
 def pjoin(*args):

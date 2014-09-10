@@ -1,3 +1,4 @@
+beautifulsoup4
 humanize
 requests
-beautifulsoup4
+six

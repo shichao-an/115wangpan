@@ -6,11 +6,13 @@ import json
 import os
 import re
 import requests
+import six
 import time
 from hashlib import sha1
 from bs4 import BeautifulSoup
 from u115 import conf
-from u115 import utils
+from u115.utils import (get_timestamp, get_utcdatetime, string_to_datetime,
+                        eval_path, quote, utf8_encode)
 
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) \
 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
@@ -247,7 +249,7 @@ class API(object):
             * If False, it will submit the torrent with default selected files
 
         """
-        filename = utils.eval_path(filename)
+        filename = eval_path(filename)
         u = self.upload(filename, self.torrents_directory)
         t = self._load_torrent(u)
         if select:
@@ -290,7 +292,7 @@ class API(object):
         :return: the uploaded file
         :rtype: :class:`.File`
         """
-        filename = utils.eval_path(filename)
+        filename = eval_path(filename)
         if directory is None:
             directory = self.downloads_directory
 
@@ -311,7 +313,7 @@ class API(object):
         params = {
             'ct': 'offline',
             'ac': 'space',
-            '_': utils.get_timestamp(13)
+            '_': get_timestamp(13)
         }
         req = Request(url=url, params=params)
         r = self.http.send(req)
@@ -349,7 +351,7 @@ class API(object):
             'ct': 'lixian',
             'ac': 'get_id',
             'torrent': 1 if torrent else None,
-            '_': utils.get_utcdatetime(13)
+            '_': get_utcdatetime(13)
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
@@ -465,7 +467,7 @@ class API(object):
 
     def _req_files_download_url(self, pickcode):
         url = self.web_api_url + '/download'
-        params = {'pickcode': pickcode, '_': utils.get_timestamp(13)}
+        params = {'pickcode': pickcode, '_': get_timestamp(13)}
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
         if res.state:
@@ -476,7 +478,7 @@ class API(object):
         params = {
             'ct': 'ajax',
             'ac': 'get_storage_info',
-            '_': utils.get_timestamp(13),
+            '_': get_timestamp(13),
         }
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
@@ -489,9 +491,9 @@ class API(object):
         b = os.path.basename(filename)
         target = 'U_1_' + str(directory.cid)
         files = {
-            'Filename': ('', utils.quote(b), ''),
+            'Filename': ('', quote(b), ''),
             'target': ('', target, ''),
-            'Filedata': (utils.quote(b), open(filename, 'rb'), ''),
+            'Filedata': (quote(b), open(filename, 'rb'), ''),
             'Upload': ('', 'Submit Query', ''),
         }
         req = Request(method='POST', url=self._upload_url, files=files)
@@ -588,7 +590,7 @@ class Base(object):
 
     def __str__(self):
         if hasattr(self, '__unicode__'):
-            return unicode(self).encode('utf-8')
+            return six.u(self).encode('utf-8')
         return '%s object' % self.__class__.__name__
 
 
@@ -644,9 +646,11 @@ class Passport(Base):
         return res
 
     def _ssopw(self, vcode):
-        p = sha1(self.password).hexdigest()
-        u = sha1(self.username).hexdigest()
-        return sha1(sha1(p + u).hexdigest() + vcode.upper()).hexdigest()
+        p = sha1(utf8_encode(self.password)).hexdigest()
+        u = sha1(utf8_encode(self.username)).hexdigest()
+        v = vcode.upper()
+        pu = sha1(utf8_encode(p + u)).hexdigest()
+        return sha1(utf8_encode(pu + v)).hexdigest()
 
     def __unicode__(self):
         return self.username
@@ -1105,8 +1109,8 @@ def _instantiate_task(api, kwargs):
     kwargs['cid'] = kwargs['file_id']
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
-    kwargs['add_time'] = utils.get_utcdatetime(kwargs['add_time'])
-    kwargs['last_update'] = utils.get_utcdatetime(kwargs['last_update'])
+    kwargs['add_time'] = get_utcdatetime(kwargs['add_time'])
+    kwargs['last_update'] = get_utcdatetime(kwargs['last_update'])
     is_transferred = (kwargs['status'] == 2 and kwargs['move'] == 1)
     if is_transferred:
         kwargs['pid'] = api.downloads_directory.cid
@@ -1122,7 +1126,7 @@ def _instantiate_task(api, kwargs):
 
 def _instantiate_file(api, kwargs):
     kwargs['file_type'] = kwargs['ico']
-    kwargs['date_created'] = utils.string_to_datetime(kwargs['t'])
+    kwargs['date_created'] = string_to_datetime(kwargs['t'])
     kwargs['pickcode'] = kwargs['pc']
     kwargs['name'] = kwargs['n']
     kwargs['thumbnail'] = kwargs.get('u')
@@ -1138,7 +1142,7 @@ def _instantiate_file(api, kwargs):
 
 def _instantiate_directory(api, kwargs):
     kwargs['name'] = kwargs['n']
-    kwargs['date_created'] = utils.get_utcdatetime(float(kwargs['t']))
+    kwargs['date_created'] = get_utcdatetime(float(kwargs['t']))
     kwargs['pickcode'] = kwargs.get('pc')
     return Directory(api, **kwargs)
 
@@ -1149,7 +1153,7 @@ def _instantiate_uploaded_file(api, kwargs):
     kwargs['pickcode'] = kwargs['pick_code']
     kwargs['size'] = kwargs['file_size']
     kwargs['sha'] = kwargs['sha1']
-    kwargs['date_created'] = utils.get_utcdatetime(kwargs['file_ptime'])
+    kwargs['date_created'] = get_utcdatetime(kwargs['file_ptime'])
     kwargs['thumbnail'] = None
     _, ft = os.path.splitext(kwargs['name'])
     kwargs['file_type'] = ft[1:]
