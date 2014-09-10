@@ -15,7 +15,7 @@ TEST_TORRENT1 = {
 }
 
 TEST_TORRENT2 = {
-    'filename': pjoin(DATA_DIR, u'オリジナルサウンドトラック (320K+BK).torrent'),
+    'filename': pjoin(DATA_DIR, u'Rozen_Maiden_OST.torrent'),
     'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
 }
 
