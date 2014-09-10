@@ -6,12 +6,7 @@ env:
     - TEST_USER_USERNAME=shichao.an.nyu@gmail.com
     - secure: nv3MEeWKtnoeAuvGWv83JlCgLY+0pcdO6Gx0gjnd9ni2P37DXkBG/b2nSC/c0ASlvd9+OhaMgSG1KLPGhK4WKF8pVu83jAwnaMViC5GSzqfFstlN4ulGs7feJooJ3zBT6kSWl4p8ttCFYxi6F9/cIpG8stsenFyZctAX4dBVjZ8=
 
-python:
-  - '2.6'
-  - '2.7'
-  - '3.3'
-
 install:
-  - pip install nose -r requirements.txt
+  - pip install nose tox -r requirements.txt
 
-script: nosetests
+script: tox
