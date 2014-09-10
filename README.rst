@@ -1,15 +1,13 @@
 115 Wangpan
 ===========
 
-Unofficial Python API for 115, mainly pertinent to its "Lixian" (offline) features.
-
-Under development.
+Unofficial Python API for 115.com, mainly pertinent to its "Lixian" (offline) features. Currently, only limited features have been implemented.
 
 Features
 --------
 
-* Account login and logout
-* BT tasks management
+* Authentication
+* Tasks management (BitTorrent currently supported)
 * File management
 
 Usage
