@@ -1,53 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-.. autoclass:: RequestHandler
-   :members:
-   :undoc-members:
-
-.. autoclass:: Request
-   :members:
-   :undoc-members:
-
-   .. automethod:: __init__
-
-.. autoclass:: Response
-   :members:
-   :undoc-members:
-
-.. autoclass:: Passport
-   :members:
-   :undoc-members:
-
-.. autoclass:: API
-   :members:
-   :undoc-members:
-
-.. autoclass:: Task
-   :members:
-   :undoc-members:
-
-.. autoclass:: Torrent
-   :members:
-   :undoc-members:
-
-.. autoclass:: TorrentFile
-   :members:
-   :undoc-members:
-
-.. autoclass:: File
-   :members:
-   :undoc-members:
-
-.. autoclass:: Directory
-   :members:
-   :undoc-members:
-
-.. autoclass::  APIError
-   :members:
-   :undoc-members:
-
-
-"""
 
 import humanize
 import json
@@ -166,8 +117,8 @@ class API(object):
     """
     Request and response interface
 
-    :ivar passport: :class:`Passport` object associated with this interface
-    :ivar http: :class:`RequestHandler` object associated with this
+    :ivar passport: :class:`.Passport` object associated with this interface
+    :ivar http: :class:`.RequestHandler` object associated with this
         interface
     :cvar int num_tasks_per_page: default number of tasks per page/request
     """
@@ -196,7 +147,7 @@ class API(object):
         :param str username: username to login (email, phone number or user ID)
         :param str password: password
         :param str section: section name in the credential file
-        :raise: raises :class:`APIError` if failed to login
+        :raise: raises :class:`.APIError` if failed to login
         """
         if self.has_logged_in:
             return True
@@ -277,7 +228,7 @@ class API(object):
         Get ``count`` number of tasks
 
         :param int count: number of tasks to get
-        :return: a list of :class:`Task` objects
+        :return: a list of :class:`.Task` objects
         """
 
         return self._load_tasks(count)
@@ -289,8 +240,8 @@ class API(object):
         :param str filename: path to torrent file to upload
         :param bool select: whether to select files in the torrent.
 
-            * If True, it returns the opened torrent (:class:`Torrent`) and
-                can then iterate files in :attr:`Torrent.files` and
+            * If True, it returns the opened torrent (:class:`.Torrent`) and
+                can then iterate files in :attr:`.Torrent.files` and
                 select/unselect them before calling :func:`Torrent.submit`
             * If False, it will submit the torrent with default selected files
 
@@ -326,10 +277,10 @@ class API(object):
         Upload a file ``filename`` to ``directory``
 
         :param str filename: path to the file to upload
-        :param directory: destionation :class:`Directory`, defaults to
-            :class:`API.downloads_directory` if None
+        :param directory: destionation :class:`.Directory`, defaults to
+            :class:`.API.downloads_directory` if None
         :return: the uploaded file
-        :rtype: :class:`File`
+        :rtype: :class:`.File`
         """
         filename = utils.eval_path(filename)
         if directory is None:
@@ -708,9 +659,14 @@ class BaseFile(Base):
         self.api = api
         self.cid = cid
         self.name = name
+        self._deleted = False
 
     def delete(self):
         """Delete file or directory"""
+        self.api._req_rb(self.cid)
+
+    @property
+    def is_deleted(self):
         pass
 
     def __unicode__(self):
@@ -778,7 +734,7 @@ class File(BaseFile):
         Open the torrent (if it is a torrent)
 
         :return: opened torrent
-        :rtype: :class:`Torrent`
+        :rtype: :class:`.Torrent`
         """
         if self.is_torrent:
             return self.api._load_torrent(self)
@@ -874,7 +830,7 @@ class Directory(BaseFile):
         :param bool asc: whether in ascending order
         :param bool show_dir: whether to show directories
 
-        Return a list of :class:`File` or :class:`Directory` objects
+        Return a list of :class:`.File` or :class:`.Directory` objects
         """
         if self.cid is None:
             return False
@@ -899,7 +855,7 @@ class Task(Directory):
     BitTorrent or URL task
 
     :ivar datetime.datetime add_time: added time
-    :ivar str file_id: equivalent to `cid` of :class:`Directory`. This value
+    :ivar str file_id: equivalent to `cid` of :class:`.Directory`. This value
         may be None if the task is failed and has no corresponding directory
     :ivar str info_hash: hashed value
     :ivar datetime.datetime last_update: last updated time
@@ -946,7 +902,7 @@ class Task(Directory):
         Delete task (does not influence its corresponding directory)
 
         :return: whether deletion is successful
-        :raise: :class:`APIError` if the task is already deleted
+        :raise: :class:`.APIError` if the task is already deleted
         """
         if not self._deleted:
             if self.api._req_lixian_task_del(self):
@@ -1046,7 +1002,7 @@ class Torrent(Base):
     :ivar int size: task size, originally named `torrent_size`
     :ivar str info_hash: hashed value
     :ivar int file_count: number of files included
-    :ivar list files: files included (list of :class:`TorrentFile`),
+    :ivar list files: files included (list of :class:`.TorrentFile`),
         originally named `torrent_filelist_web`
     """
 
@@ -1070,7 +1026,7 @@ class Torrent(Base):
 
     @property
     def selected_files(self):
-        """List of selected :class:`TorrentFile` objects of this torrent"""
+        """List of selected :class:`.TorrentFile` objects of this torrent"""
         return [f for f in self.files if f.selected]
 
     @property
@@ -1087,7 +1043,7 @@ class TorrentFile(Base):
     File in the torrent file list
 
     :param torrent: the torrent that holds this file
-    :type torrent: :class:`Torrent`
+    :type torrent: :class:`.Torrent`
     :param str path: file path in the torrent
     :param int size: file size
     :param bool selected: whether this file is selected

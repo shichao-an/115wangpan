@@ -3,15 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to 115-lixian's documentation!
-======================================
+115wangpan Documentation
+========================
 
-Contents:
+.. include:: ../../README.rst
+
+Contents
+========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4 
 
-   quickstart
    api
 
 

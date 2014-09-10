@@ -7,7 +7,7 @@ from u115 import conf
 
 LARGE_COUNT = 999
 SMALL_COUNT = 2
-TEST_DIR = pjoin(conf.project_path, 'tests')
+TEST_DIR = pjoin(conf.PROJECT_PATH, 'tests')
 DATA_DIR = pjoin(TEST_DIR, 'data')
 TEST_TORRENT1 = {
     'filename': pjoin(DATA_DIR, u'SAOII_10.torrent'),
