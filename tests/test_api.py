@@ -65,7 +65,7 @@ class TestAPI(TestCase):
                     assert f.get_download_url()
                     break
 
-    def test_delete_file(self):
+    def __test_delete_file(self):
         tasks = self.api.get_tasks()
         for t in tasks:
             if t.info_hash == TEST_TORRENT2['info_hash']:

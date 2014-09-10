@@ -1002,10 +1002,10 @@ class Task(Directory):
         if self._directory is None:
             if self.is_transferred:
                 self._directory = self.api._load_directory(self.cid)
-        if self._directory is None:
-            msg = 'No directory corresponding to this task: Task is %s.' % \
-                self.status_human.lower()
-            raise APIError(msg)
+        #if self._directory is None:
+            #msg = 'No directory corresponding to this task: Task is %s.' % \
+                #self.status_human.lower()
+            #raise APIError(msg)
         return self._directory
 
     @property

@@ -14,9 +14,7 @@ Features
 
 Installation
 ------------
-.. code-block:: bash
 
-    $ pip install 115wangpan
 
 Usage
 -----
