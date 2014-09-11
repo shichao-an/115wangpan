@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
-from u115 import __version__
 
 
 setup(
     name='115wangpan',
-    version=__version__,
+    version='0.1.1',
     description="Unofficial Python API wrapper for 115.com",
     long_description=open('README.rst').read(),
     keywords='115 wangpan pan cloud lixian',
