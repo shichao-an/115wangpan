@@ -98,8 +98,75 @@ Or you can edit the torrent and select files before submitting:
 Directories and files
 ---------------------
 
+If you have created BitTorrent tasks, you will have two directories by default, downloads directory which holds downloaded and transferred files, and torrents directory, which holds uploaded torrent files.
 
+.. code-block:: python
 
+    >>> api.downloads_directory
+    <Directory: 离线下载>
+    >>> api.torrents_directory
+    <Directory: 种子文件>
+
+You can list contents of a directory:
+
+.. code-block:: python
+
+    >>> entries = api.downloads_directory.list()
+    >>> d = entries[0]
+    >>> d_entries = d.list()
+    >>> d_entries
+    [<Directory: BK>, <Directory: MP3>, <File: Cover.jpg>
+    >>> dd_entries = d_entries[0].list()
+    >>> dd_entries.list()
+    [<File: IMG_0003.jpg>, <File: IMG_0004.jpg>, <File: IMG_0005.jpg>, <File: IMG_0006.jpg>]
+
+Download files
+--------------
+
+For offline files, you can retrieve download links:
+
+.. code-block:: python
+
+    >>> f = dd_entries.list()[0]
+    >>> f
+    <File: IMG_0003.jpg>
+    >>> f1.get_download_url()
+    u'http://cdnuni.115.com/very-long-name.jpg'
+
+Upload files
+------------
+
+You can upload files to any offline directory (defaults to ``downloads_directory``):
+
+.. code-block:: python
+    
+    >>> p = api.downloads_directory.parent
+    >>> p
+    <Directory: 我的接收>
+    >>> u = api.upload('/path/to/photo.jpg', directory=p)
+    >>> u
+    <File: photo.jpg>
+
+The file you upload can be a torrent file, which you can open later and create a task from it:
+
+.. code-block:: python
+
+    >>> u = api.upload('/path/to/movie.torrent')
+    >>> u.is_torrent
+    True
+    >>> t = u.open_torrent()
+    >>> t.submit()
+    
+
+Storage info
+------------
+
+You can have an overview of your storage information:
+
+.. code-block:: python
+
+    >>> api.get_storage_info(human=True)
+    {u'total': '152.3 GiB', u'used': '3.6 GiB'}
 
 .. toctree::
    :maxdepth: 2
