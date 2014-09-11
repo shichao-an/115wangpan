@@ -898,7 +898,7 @@ class Task(Directory):
         may be None if the task is failed and has no corresponding directory
     :ivar str info_hash: hashed value
     :ivar datetime.datetime last_update: last updated time
-    :ivar int left_time: left time
+    :ivar int left_time: left time ()
     :ivar int move: moving state
 
         * 0: not transferred
@@ -908,7 +908,8 @@ class Task(Directory):
     :ivar str name: name of this task
     :ivar int peers: number of peers
     :ivar int percent_done: <=100, originally named `percentDone`
-    :ivar int rate_download: originally named `rateDownload`
+    :ivar int rate_download: download rate (B/s), originally named
+        `rateDownload`
     :ivar int size: size of task
     :ivar str size_human: human-readable size
     :ivar int status: status code

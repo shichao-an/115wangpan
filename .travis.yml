@@ -3,7 +3,7 @@ language: python
 env:
   global:
     - TRAVIS_TEST=1
-    - TEST_USER_USERNAME=shichao.an.nyu@gmail.com
+    - TEST_USER_USERNAME=moleculeaweb@gmail.com
     - secure: nv3MEeWKtnoeAuvGWv83JlCgLY+0pcdO6Gx0gjnd9ni2P37DXkBG/b2nSC/c0ASlvd9+OhaMgSG1KLPGhK4WKF8pVu83jAwnaMViC5GSzqfFstlN4ulGs7feJooJ3zBT6kSWl4p8ttCFYxi6F9/cIpG8stsenFyZctAX4dBVjZ8=
 
 install:

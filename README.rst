@@ -3,7 +3,7 @@
 
 |Build| |PyPI version|
 
-Unofficial Python API for 115.com, mainly pertinent to its "Lixian" (offline) features. Currently, only limited features have been implemented.
+Unofficial Python API for 115.com, mainly pertinent to its "lixian" (offline) features. Currently, only limited features have been implemented.
 
 Features
 --------
@@ -47,4 +47,4 @@ Usage
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
    :target: http://travis-ci.org/shichao-an/115wangpan
 .. |PyPI version| image:: https://pypip.in/v/115wangpan/badge.png
-   :target: https://crate.io/packages/115wangpan
+   :target: https://pypi.python.org/pypi/115wangpan/

@@ -16,6 +16,7 @@ Contents
 
    quickstart
    api
+   changelog
 
 Indices and tables
 ==================
