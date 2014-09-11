@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# 115-lixian documentation build configuration file, created by
+# 115wangpan documentation build configuration file, created by
 # sphinx-quickstart on Fri Sep  5 22:30:40 2014.
 #
 # This file is execfile()d with the current directory set to its
