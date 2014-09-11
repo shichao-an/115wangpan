@@ -13,7 +13,7 @@ setup(
     url='https://github.com/shichao-an/115wangpan',
     license='BSD',
     install_requires=open('requirements.txt').read().splitlines(),
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests', 'docs']),
     include_package_data=True,
     zip_safe=False,
     classifiers=[
