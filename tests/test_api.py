@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import time
 from unittest import TestCase
-from u115.api import API, Torrent, Directory, File
+from u115.api import API, Torrent, Directory, File, TaskError
 from u115.utils import pjoin
 from u115 import conf
 
@@ -65,12 +66,19 @@ class TestAPI(TestCase):
                     assert f.get_download_url()
                     break
 
-    def __test_delete_file(self):
+    def test_delete_file(self):
         tasks = self.api.get_tasks()
         for t in tasks:
             if t.info_hash == TEST_TORRENT2['info_hash']:
                 # Delete file
-                d1 = t.directory
+                try:
+                    d1 = t.directory
+                except TaskError:
+                    time.sleep(20)
+                try:
+                    d1 = t.directory
+                except TaskError:
+                    return
                 d1_count = d1.count
                 d2 = d1.list()[1]
                 d2_count = d2.count

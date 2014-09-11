@@ -61,8 +61,8 @@ class RequestHandler(object):
         """
         :param :class:`requests.Response` r: a response object of the Requests
             library
-        :param bool expect_json: if True, raise APIError if response is not in
-            JSON format
+        :param bool expect_json: if True, raise :class`.InvalidAPIAccess` if
+            response is not in JSON format
         """
         if r.ok:
             try:
@@ -72,7 +72,7 @@ class RequestHandler(object):
                 # No JSON-encoded data returned
                 if expect_json:
                     print(r.content)
-                    raise APIError('Invalid API access.')
+                    raise InvalidAPIAccess('Invalid API access.')
                 return Response(False, r.content)
         else:
             r.raise_for_status()
@@ -149,7 +149,7 @@ class API(object):
         :param str username: username to login (email, phone number or user ID)
         :param str password: password
         :param str section: section name in the credential file
-        :raise: raises :class:`.APIError` if failed to login
+        :raise: raises :class:`.AuthenticationError` if failed to login
         """
         if self.has_logged_in:
             return True
@@ -176,8 +176,7 @@ class API(object):
                 elif r.content['err_name'] == 'passwd':
                     msg = 'Password is incorrect.'
             passport.status = 'FAILED'
-            error = APIError(msg)
-            raise error
+            raise AuthenticationError(msg)
 
     @property
     def has_logged_in(self):
@@ -321,7 +320,7 @@ class API(object):
             self._lixian_timestamp = r.content['time']
         else:
             msg = 'Failed to retrieve signatures.'
-            raise APIError(msg)
+            raise RequestFailure(msg)
 
     def _req_lixian_task_lists(self, page=1):
         url = 'http://115.com/lixian/'
@@ -341,7 +340,7 @@ class API(object):
             return res.content['tasks']
         else:
             msg = 'Failed to get tasks.'
-            raise APIError(msg)
+            raise RequestFailure(msg)
 
     def _req_lixian_get_id(self, torrent=False):
         """Get `cid` of lixian space directory"""
@@ -379,7 +378,7 @@ class API(object):
         if res.state:
             return res.content
         else:
-            raise APIError('Failed to open torrent.')
+            raise RequestFailure('Failed to open torrent.')
 
     def _req_lixian_add_task_bt(self, t):
 
@@ -405,7 +404,7 @@ class API(object):
             return True
         else:
             print(res.content.get('error_msg'))
-            raise APIError('Failed to create new task.')
+            raise RequestFailure('Failed to create new task.')
 
     def _req_lixian_task_del(self, t):
 
@@ -423,7 +422,7 @@ class API(object):
         if res.state:
             return True
         else:
-            raise APIError('Failed to delete the task.')
+            raise RequestFailure('Failed to delete the task.')
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=1, code=None, scid=None, snap=0, natsort=None,
@@ -435,7 +434,7 @@ class API(object):
         if res.state:
             return res.content
         else:
-            raise APIError('Failed to access files API.')
+            raise RequestFailure('Failed to access files API.')
 
     def _req_file(self, file_id):
         url = self.web_api_url + '/file'
@@ -445,7 +444,7 @@ class API(object):
         if res.state:
             return res.content
         else:
-            raise APIError('Failed to access files API.')
+            raise RequestFailure('Failed to access files API.')
 
     def _req_directory(self, cid):
         """Return name and pid of by cid"""
@@ -462,7 +461,7 @@ class API(object):
                 }
                 return res
         else:
-            raise APIError('No directory found.')
+            raise RequestFailure('No directory found.')
 
     def _req_files_download_url(self, pickcode):
         url = self.web_api_url + '/download'
@@ -471,6 +470,8 @@ class API(object):
         res = self.http.send(req)
         if res.state:
             return res.content['file_url']
+        else:
+            raise RequestFailure('Failed to get download URL.')
 
     def _req_get_storage_info(self):
         url = 'http://115.com'
@@ -505,7 +506,7 @@ class API(object):
                 msg = 'Invalid parameter.'
             elif res.content['code'] == 1001:
                 msg = 'Torrent upload failed. Please try again later.'
-            raise APIError(msg)
+            raise RequestFailure(msg)
 
     def _req_rb_delete(self, fcid, pid):
 
@@ -1002,10 +1003,10 @@ class Task(Directory):
         if self._directory is None:
             if self.is_transferred:
                 self._directory = self.api._load_directory(self.cid)
-        #if self._directory is None:
-            #msg = 'No directory corresponding to this task: Task is %s.' % \
-                #self.status_human.lower()
-            #raise APIError(msg)
+        if self._directory is None:
+            msg = 'No directory corresponding to this task: Task is %s.' % \
+                self.status_human.lower()
+            raise TaskError(msg)
         return self._directory
 
     @property
@@ -1181,5 +1182,28 @@ def _instantiate_torrent_file(torrent, kwargs):
 
 
 class APIError(Exception):
-    """Error related to API access"""
+    """Error related to API"""
+    def __init__(self, *args, **kwargs):
+        content = kwargs.pop('content', None)
+        self.content = content
+        super(APIError, self).__init__(*args, **kwargs)
+
+
+class TaskError(APIError):
+    """"Task has unstable status or no directory operation"""
+    pass
+
+
+class AuthenticationError(APIError):
+    """Authentication error"""
+    pass
+
+
+class InvalidAPIAccess(APIError):
+    """Invalid and forbidden API access"""
+    pass
+
+
+class RequestFailure(APIError):
+    """Request failure"""
     pass
