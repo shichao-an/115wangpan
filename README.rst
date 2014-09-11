@@ -3,7 +3,12 @@
 
 |Build| |PyPI version|
 
-Unofficial Python API for 115.com, mainly pertinent to its "lixian" (offline) features. Currently, only limited features have been implemented.
+115 Wangpan (115网盘) is an unofficial Python API for 115.com, mainly pertinent to its "lixian" (offline) features. Currently, only limited features have been implemented. Supported Python verisons are 2.6, 2.7 and 3.3.
+
+  * Documentation: http://115wangpan.readthedocs.org
+  * GitHub: https://github.com/shichao-an/115wangpan
+  * PyPI: https://pypi.python.org/pypi/115wangpan/
+
 
 Features
 --------
@@ -14,6 +19,10 @@ Features
 
 Installation
 ------------
+
+.. code-block:: bash
+
+    $ pip install 115wangpan
 
 
 Usage
