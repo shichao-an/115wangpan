@@ -1,1 +1,5 @@
 alabaster
+beautifulsoup4
+humanize
+requests
+six
