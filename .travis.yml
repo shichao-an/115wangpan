@@ -1,5 +1,9 @@
 language: python
 
+branches:
+  only:
+    - master
+
 env:
   global:
     - TRAVIS_TEST=1
