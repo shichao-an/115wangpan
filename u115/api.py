@@ -11,7 +11,7 @@ from hashlib import sha1
 from bs4 import BeautifulSoup
 from u115 import conf
 from u115.utils import (get_timestamp, get_utcdatetime, string_to_datetime,
-                        eval_path, quote, utf8_encode, txt_type, PY3)
+                        eval_path, quote, utf8_encode, txt_type, PY3, download)
 
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) \
 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
@@ -304,6 +304,10 @@ class API(object):
         data2 = res2['data'][0]
         data2.update(**data1)
         return _instantiate_uploaded_file(self, data2)
+
+    def download(self, url, path=None):
+        """Download a file"""
+        download(url, path=path, session=self.http.session)
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
