@@ -130,8 +130,8 @@ class API(object):
 
     def __init__(self, auto_logout=True):
         """
-        :param bool auto_logout: whether to logout automatically, that is,
-            when :class:`.API` object is destroyed
+        :param bool auto_logout: whether to logout automatically when
+            :class:`.API` object is destroyed
         """
         self.auto_logout = auto_logout
         self.passport = None
