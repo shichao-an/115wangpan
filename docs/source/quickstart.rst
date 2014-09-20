@@ -133,7 +133,6 @@ For offline files, you can retrieve download links:
     >>> f.get_download_url()
     u'http://cdnuni.115.com/very-long-name.mov'
     >>> f.download()
-    Downloading video.mov ...
              1%   14.3 MiB     437.3 KiB/s         0:53:45 ETA
 
 Upload files
