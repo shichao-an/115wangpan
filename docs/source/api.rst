@@ -8,6 +8,8 @@ Main interface
    :members:
    :undoc-members:
 
+   .. automethod:: u115.API.__init__
+
 Request and response
 --------------------
 
@@ -61,6 +63,23 @@ Exceptions
 ----------
 
 .. autoclass:: u115.APIError
+   :members:
+   :undoc-members:
+
+.. autoclass:: u115.TaskError
+   :members:
+   :undoc-members:
+
+
+.. autoclass:: u115.AuthenticationError
+   :members:
+   :undoc-members:
+
+.. autoclass:: u115.InvalidAPIAccess
+   :members:
+   :undoc-members:
+
+.. autoclass:: u115.RequestFailure
    :members:
    :undoc-members:
 

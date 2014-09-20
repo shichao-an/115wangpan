@@ -129,9 +129,12 @@ For offline files, you can retrieve download links:
 
     >>> f = dd_entries.list()[0]
     >>> f
-    <File: IMG_0003.jpg>
+    <File: video.mov>
     >>> f1.get_download_url()
-    u'http://cdnuni.115.com/very-long-name.jpg'
+    u'http://cdnuni.115.com/very-long-name.mov'
+    >>> f1.download()
+    Downloading video.mov ...
+             1%   14.3 MiB     437.3 KiB/s         0:53:45 ETA
 
 Upload files
 ------------
