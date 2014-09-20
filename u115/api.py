@@ -938,6 +938,11 @@ class Task(Directory):
     :ivar str size_human: human-readable size
     :ivar int status: status code
 
+        * -1: failed
+        * 1: downloading
+        * 2: downloaded
+        * 4: searching resources
+
     """
 
     def __init__(self, api, add_time, file_id, info_hash, last_update,
@@ -993,12 +998,13 @@ class Task(Directory):
 
         :return:
 
-            * `BEING TRANSFERRED`: the tasks is being transferred
-            * `TRANSFERRED`: the tasks has been transferred to downloads \
+            * `DOWNLOADING`: the task is downloading files
+            * `BEING TRANSFERRED`: the task is being transferred
+            * `TRANSFERRED`: the task has been transferred to downloads \
                     directory
-            * `SEARCHING RESOURCES`
-            * `FAILED`
-            * `DELETED`
+            * `SEARCHING RESOURCES`: the task is searching resources
+            * `FAILED`: the task is failed
+            * `DELETED`: the task is deleted
             * `UNKNOWN STATUS`
 
         :rtype: str
@@ -1008,6 +1014,8 @@ class Task(Directory):
         if self._deleted:
             return 'DELETED'
         if self.status == 2:
+            res = 'DOWNLOADING'
+        elif self.status == 2:
             if self.move == 0:
                 res = 'BEING TRANSFERRED'
             elif self.move == 1:
