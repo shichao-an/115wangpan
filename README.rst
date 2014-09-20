@@ -34,6 +34,9 @@ Install dependencies before installing the python package:
       $ sudo yum groupinstall "Development Tools"
       $ sudo yum install libcurl libcurl-devel python-devel
 
+
+Then, you can install with pip:
+
 .. code-block:: bash
 
     $ pip install 115wangpan
