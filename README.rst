@@ -21,25 +21,18 @@ Installation
 ------------
 Install dependencies before installing the python package:
 
-Ubuntu
-~~~~~~
+* Ubuntu
 
-.. code-block:: bash
+  .. code-block:: bash
 
     $ sudo apt-get install libcurl4-openssl-dev python-dev
 
+* Fedora
 
-Fedora
-~~~~~~
+  .. code-block:: bash
 
-.. code-block:: bash
-
-    $ sudo yum groupinstall "Development Tools"
-    $ sudo yum install libcurl libcurl-devel python-devel
-
-
-Python package
-~~~~~~~~~~~~~~
+      $ sudo yum groupinstall "Development Tools"
+      $ sudo yum install libcurl libcurl-devel python-devel
 
 .. code-block:: bash
 
