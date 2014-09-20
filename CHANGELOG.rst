@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.2.1 (2014-09-20)
+------------------
+
+- Fixed ``Task.status_human`` error
+
 0.2.0 (2014-09-20)
 ------------------
 
@@ -8,6 +13,7 @@ Changelog
 - Added elaborate exceptions
 - Added ``auto_logout`` optional argument to ``u115.API.__init__``
 - Updated Task status info
+
 
 0.1.1 (2014-09-11)
 ------------------
@@ -19,6 +25,4 @@ Changelog
 ------------------
 
 - Initial release.
-
-
 
