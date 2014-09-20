@@ -6,6 +6,7 @@ import sys
 import time
 import pycurl
 from requests.utils import quote as _quote
+from requests.utils import unquote as _unquote
 from humanize import naturalsize
 
 PY3 = sys.version_info[0] == 3
@@ -49,6 +50,10 @@ def quote(s):
     return _quote(res)
 
 
+def unquote(s):
+    return _unquote(s)
+
+
 def utf8_encode(s):
     res = s
     if isinstance(res, six.text_type):
@@ -64,7 +69,7 @@ def pjoin(*args):
 class DownloadManager(object):
     """Donwload manager that displays progress"""
     progress_template = \
-        '%(percent)10d%% %(downloaded)10s %(speed)15s %(eta)15s ETA\r'
+        '%(percent)6d%% %(downloaded)12s %(speed)15s %(eta)18s ETA\r'
     eta_limit = 2592000  # 30 days
 
     def __init__(self, url, path=None, session=None, show_progress=True):
@@ -90,7 +95,7 @@ class DownloadManager(object):
         if self.session is not None:
             cookie = dict(self.session.cookies)
             res = []
-            for k, v in cookie.iteritems():
+            for k, v in cookie.items():
                 s = '%s=%s' % (k, v)
                 res.append(s)
             if not res:
@@ -101,7 +106,7 @@ class DownloadManager(object):
         if path is None:
             o = urlparse(self.url)
             path = os.path.basename(o.path)
-            return path
+            return unquote(path)
         else:
             return eval_path(path)
 

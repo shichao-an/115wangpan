@@ -128,7 +128,12 @@ class API(object):
     num_tasks_per_page = 30
     web_api_url = 'http://web.api.115.com/files'
 
-    def __init__(self):
+    def __init__(self, auto_logout=True):
+        """
+        :param bool auto_logout: whether to logout automatically, that is,
+            when :class:`.API` object is destroyed
+        """
+        self.auto_logout = auto_logout
         self.passport = None
         self.http = RequestHandler()
         self._signatures = {}
@@ -138,6 +143,10 @@ class API(object):
         self._torrents_directory = None
         self._task_count = None
         self._task_quota = None
+
+    def __del__(self):
+        if self.auto_logout and self.has_logged_in:
+            self.logout()
 
     def login(self, username=None, password=None,
               section='default'):
@@ -311,8 +320,8 @@ class API(object):
 
         :param obj: :class:`.File` object
         :param str path: local path
+        :param bool show_progress: whether to show download progress
         """
-        print('Downloading %s ...' % str(obj))
         download(obj.url, path=path, session=self.http.session,
                  show_progress=show_progress)
 
@@ -1198,7 +1207,7 @@ def _instantiate_torrent_file(torrent, kwargs):
 
 
 class APIError(Exception):
-    """Error related to API"""
+    """General error related to API"""
     def __init__(self, *args, **kwargs):
         content = kwargs.pop('content', None)
         self.content = content
@@ -1206,7 +1215,7 @@ class APIError(Exception):
 
 
 class TaskError(APIError):
-    """"Task has unstable status or no directory operation"""
+    """Task has unstable status or no directory operation"""
     pass
 
 
