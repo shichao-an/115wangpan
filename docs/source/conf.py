@@ -203,7 +203,7 @@ html_sidebars = {
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = '115-lixiandoc'
+htmlhelp_basename = '115wangpandoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -223,7 +223,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', '115-lixian.tex', u'115-lixian Documentation',
+  ('index', '115wangpan.tex', u'115wangpan Documentation',
    u'Shichao An', 'manual'),
 ]
 
@@ -253,7 +253,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', '115-lixian', u'115-lixian Documentation',
+    ('index', '115wangpan', u'115wangpan Documentation',
      [u'Shichao An'], 1)
 ]
 
@@ -267,8 +267,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', '115-lixian', u'115-lixian Documentation',
-   u'Shichao An', '115-lixian', 'One line description of project.',
+  ('index', '115wangpan', u'115wangpan Documentation',
+   u'Shichao An', '115wangpan', 'One line description of project.',
    'Miscellaneous'),
 ]
 
