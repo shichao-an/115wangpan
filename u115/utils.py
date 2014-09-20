@@ -4,9 +4,9 @@ import os
 import six
 import sys
 import time
-import requests
+import pycurl
 from requests.utils import quote as _quote
-from clint.textui import progress
+from humanize import naturalsize
 
 PY3 = sys.version_info[0] == 3
 
@@ -61,28 +61,96 @@ def pjoin(*args):
     return os.path.join(*args)
 
 
-def download(url, path=None, session=None, chunk_size=1024):
-    """Download a file, typically very large, showing progress"""
-    if session is not None:
-        r = session.get(url, stream=True)
-    else:
-        r = requests.get(url, stream=True)
-    if r.ok:
+class DownloadManager(object):
+    """Donwload manager that displays progress"""
+    progress_template = \
+        '%(percent)10d%% %(downloaded)10s %(speed)15s %(eta)15s ETA\r'
+    eta_limit = 2592000  # 30 days
+
+    def __init__(self, url, path=None, session=None, show_progress=True):
+        """
+        :param str url: URL of the file to be downloaded
+        :param str path: local path for the downloaded file; if None, it will
+            be the URL base name
+        :param session: session used to download
+        :type session: `class:requests.Session`
+        :param bool show_progress: whether to show download progress
+        """
+        self.url = url
+        self.path = self._get_path(path)
+        self.session = session
+        self.show_progress = show_progress
+        self.start_time = None
+        self._cookie_header = self._get_cookie_header()
+
+    def __del__(self):
+        self.done()
+
+    def _get_cookie_header(self):
+        if self.session is not None:
+            cookie = dict(self.session.cookies)
+            res = []
+            for k, v in cookie.iteritems():
+                s = '%s=%s' % (k, v)
+                res.append(s)
+            if not res:
+                return None
+            return '; '.join(res)
+
+    def _get_path(self, path=None):
         if path is None:
-            o = urlparse(url)
+            o = urlparse(self.url)
             path = os.path.basename(o.path)
-        total_length = int(r.headers.get('content-length'))
-        if total_length > 1024 * 1024:
-            chunk_size = 1024 * 1024
-        expected_size = total_length / chunk_size + 1
-        label = '(KB)'
-        if chunk_size == 1024 * 1024:
-            label = '(MB)'
-        with open(path, 'wb') as f:
-            for chunk in progress.bar(r.iter_content(chunk_size=chunk_size),
-                                      expected_size=expected_size,
-                                      label=label):
-                if chunk:
-                    f.write(chunk)
-    else:
-        r.raise_for_status()
+            return path
+        else:
+            return eval_path(path)
+
+    def curl(self):
+        """Sending cURL request to download"""
+        with open(self.path, 'wb') as f:
+            c = pycurl.Curl()
+            c.setopt(c.URL, self.url)
+            c.setopt(c.WRITEDATA, f)
+            c.setopt(c.NOPROGRESS, 0)
+            if self._cookie_header is not None:
+                h = 'Cookie: %s' % self._cookie_header
+                c.setopt(pycurl.HTTPHEADER, [h])
+            c.setopt(c.PROGRESSFUNCTION, self.progress)
+            c.perform()
+
+    def progress(self, download_t, download_d, upload_t, upload_d):
+        if int(download_t) == 0:
+            return
+        if self.start_time is None:
+            self.start_time = time.time()
+        duration = time.time() - self.start_time + 1
+        speed = download_d / duration
+        speed_s = naturalsize(speed, binary=True)
+        speed_s += '/s'
+        eta = int((download_t - download_d) / speed)
+        if eta < self.eta_limit:
+            eta_s = str(datetime.timedelta(seconds=eta))
+        else:
+            eta_s = 'n/a'
+        if int(download_d) == 0:
+            download_d == 0.01
+        download_ds = naturalsize(download_d, binary=True)
+        params = {
+            'downloaded': download_ds,
+            'percent': int(download_d / download_t * 100),
+            'speed': speed_s,
+            'eta': eta_s,
+        }
+        p = self.progress_template % params
+        sys.stderr.write(p)
+        sys.stderr.flush()
+
+    def done(self):
+        sys.stderr.write('\n')
+        sys.stderr.flush()
+
+
+def download(url, path=None, session=None, show_progress=True):
+    """Download using download manager"""
+    dm = DownloadManager(url, path, session, show_progress)
+    dm.curl()

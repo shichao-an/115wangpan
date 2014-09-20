@@ -305,9 +305,16 @@ class API(object):
         data2.update(**data1)
         return _instantiate_uploaded_file(self, data2)
 
-    def download(self, url, path=None):
-        """Download a file"""
-        download(url, path=path, session=self.http.session)
+    def download(self, obj, path=None, show_progress=True):
+        """
+        Download a file
+
+        :param obj: :class:`.File` object
+        :param str path: local path
+        """
+        print('Downloading %s ...' % str(obj))
+        download(obj.url, path=path, session=self.http.session,
+                 show_progress=show_progress)
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
@@ -766,6 +773,10 @@ class File(BaseFile):
     def url(self):
         """Alias for :func:`File.get_download_url`"""
         return self.get_download_url()
+
+    def download(self):
+        """Download this file"""
+        self.api.download(self)
 
     @property
     def is_torrent(self):
