@@ -3,4 +3,3 @@ beautifulsoup4
 humanize
 requests
 six
-pycurl
