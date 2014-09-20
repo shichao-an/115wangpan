@@ -19,6 +19,27 @@ Features
 
 Installation
 ------------
+Install dependencies before installing the python package:
+
+Ubuntu
+~~~~~~
+
+.. code-block:: bash
+
+    $ sudo apt-get install libcurl4-openssl-dev python-dev
+
+
+Fedora
+~~~~~~
+
+.. code-block:: bash
+
+    $ sudo yum groupinstall "Development Tools"
+    $ sudo yum install libcurl libcurl-devel python-devel
+
+
+Python package
+~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
