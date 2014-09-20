@@ -51,7 +51,11 @@ def quote(s):
 
 
 def unquote(s):
-    return _unquote(s)
+    res = s
+    if not PY3:
+        if isinstance(res, six.text_type):
+            res = s.encode('utf-8')
+    return _unquote(res)
 
 
 def utf8_encode(s):
