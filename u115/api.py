@@ -1013,7 +1013,7 @@ class Task(Directory):
         res = None
         if self._deleted:
             return 'DELETED'
-        if self.status == 2:
+        if self.status == 1:
             res = 'DOWNLOADING'
         elif self.status == 2:
             if self.move == 0:
