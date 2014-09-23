@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.2.3 (2014-09-23)
+------------------
+
+- Fixed #2: ``show_progress`` argument
+- Added resume download feature
+
 0.2.2 (2014-09-20)
 ------------------
 
