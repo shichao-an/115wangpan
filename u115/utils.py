@@ -92,6 +92,7 @@ class DownloadManager(object):
         self.path = self._get_path(path)
         self.session = session
         self.show_progress = show_progress
+        self.auto_resume = auto_resume
         self.start_time = None
         self.downloaded = 0
         self._cookie_header = self._get_cookie_header()
@@ -122,7 +123,7 @@ class DownloadManager(object):
         """Sending cURL request to download"""
         c = pycurl.Curl()
         # Resume download
-        if os.path.exists(self.path):
+        if os.path.exists(self.path) and self.auto_resume:
             mode = 'ab'
             self.downloaded = os.path.getsize(self.path)
             c.setopt(pycurl.RESUME_FROM, self.downloaded)
@@ -171,7 +172,8 @@ class DownloadManager(object):
         sys.stderr.flush()
 
 
-def download(url, path=None, session=None, show_progress=True):
+def download(url, path=None, session=None, show_progress=True,
+             auto_resume=True):
     """Download using download manager"""
-    dm = DownloadManager(url, path, session, show_progress)
+    dm = DownloadManager(url, path, session, show_progress, auto_resume)
     dm.curl()
