@@ -76,7 +76,8 @@ class DownloadManager(object):
         '%(percent)6d%% %(downloaded)12s %(speed)15s %(eta)18s ETA\r'
     eta_limit = 2592000  # 30 days
 
-    def __init__(self, url, path=None, session=None, show_progress=True):
+    def __init__(self, url, path=None, session=None, show_progress=True,
+                 auto_resume=True):
         """
         :param str url: URL of the file to be downloaded
         :param str path: local path for the downloaded file; if None, it will
@@ -84,12 +85,15 @@ class DownloadManager(object):
         :param session: session used to download
         :type session: `class:requests.Session`
         :param bool show_progress: whether to show download progress
+        :param bool auto_resume: whether to automatically resume download (by
+            filename)
         """
         self.url = url
         self.path = self._get_path(path)
         self.session = session
         self.show_progress = show_progress
         self.start_time = None
+        self.downloaded = 0
         self._cookie_header = self._get_cookie_header()
 
     def __del__(self):
@@ -116,18 +120,27 @@ class DownloadManager(object):
 
     def curl(self):
         """Sending cURL request to download"""
-        with open(self.path, 'wb') as f:
-            c = pycurl.Curl()
+        c = pycurl.Curl()
+        # Resume download
+        if os.path.exists(self.path):
+            mode = 'ab'
+            self.downloaded = os.path.getsize(self.path)
+            c.setopt(pycurl.RESUME_FROM, self.downloaded)
+        else:
+            mode = 'wb'
+        with open(self.path, mode) as f:
             c.setopt(c.URL, self.url)
             c.setopt(c.WRITEDATA, f)
-            c.setopt(c.NOPROGRESS, 0)
             if self._cookie_header is not None:
                 h = 'Cookie: %s' % self._cookie_header
                 c.setopt(pycurl.HTTPHEADER, [h])
+            c.setopt(c.NOPROGRESS, 0)
             c.setopt(c.PROGRESSFUNCTION, self.progress)
             c.perform()
 
     def progress(self, download_t, download_d, upload_t, upload_d):
+        if not self.show_progress:
+            return
         if int(download_t) == 0:
             return
         if self.start_time is None:
@@ -141,12 +154,11 @@ class DownloadManager(object):
             eta_s = str(datetime.timedelta(seconds=eta))
         else:
             eta_s = 'n/a'
-        if int(download_d) == 0:
-            download_d == 0.01
-        download_ds = naturalsize(download_d, binary=True)
+        downloaded = self.downloaded + download_d
+        download_ds = naturalsize(downloaded, binary=True)
         params = {
             'downloaded': download_ds,
-            'percent': int(download_d / download_t * 100),
+            'percent': int(downloaded / (self.downloaded + download_t) * 100),
             'speed': speed_s,
             'eta': eta_s,
         }
