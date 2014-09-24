@@ -159,9 +159,11 @@ class DownloadManager(object):
                     raise e
 
     def progress(self, download_t, download_d, upload_t, upload_d):
-        if not self.show_progress:
-            return
         if int(download_t) == 0:
+            return
+        if self.content_length == 0:
+            self.content_length = self.downloaded + int(download_t)
+        if not self.show_progress:
             return
         if self.start_time is None:
             self.start_time = time.time()
@@ -175,12 +177,10 @@ class DownloadManager(object):
         else:
             eta_s = 'n/a'
         downloaded = self.downloaded + download_d
-        download_ds = naturalsize(downloaded, binary=True)
-        if self.content_length == 0:
-            self.content_length = self.downloaded + download_t
+        downloaded_s = naturalsize(downloaded, binary=True)
         percent = int(downloaded / (self.content_length) * 100)
         params = {
-            'downloaded': download_ds,
+            'downloaded': downloaded_s,
             'percent': percent,
             'speed': speed_s,
             'eta': eta_s,
