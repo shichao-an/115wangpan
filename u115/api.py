@@ -314,18 +314,22 @@ class API(object):
         data2.update(**data1)
         return _instantiate_uploaded_file(self, data2)
 
-    def download(self, obj, path=None, show_progress=True, auto_resume=True):
+    def download(self, obj, path=None, show_progress=True, resume=True,
+                 auto_retry=True):
         """
         Download a file
 
         :param obj: :class:`.File` object
         :param str path: local path
         :param bool show_progress: whether to show download progress
-        :param bool auto_resume: whether to resume on unfinished downloads
+        :param bool resume: whether to resume on unfinished downloads
             identified by filename
+        :param bool auto_retry: whether to retry automatically upon closed
+            transfer until the file's download is finished
         """
         download(obj.url, path=path, session=self.http.session,
-                 show_progress=show_progress, auto_resume=auto_resume)
+                 show_progress=show_progress, resume=resume,
+                 auto_retry=auto_retry)
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
@@ -785,9 +789,10 @@ class File(BaseFile):
         """Alias for :func:`File.get_download_url`"""
         return self.get_download_url()
 
-    def download(self, path=None, show_progress=True, auto_resume=True):
+    def download(self, path=None, show_progress=True, resume=True,
+                 auto_retry=True):
         """Download this file"""
-        self.api.download(self, path, show_progress, auto_resume)
+        self.api.download(self, path, show_progress, resume, auto_retry)
 
     @property
     def is_torrent(self):

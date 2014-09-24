@@ -2,5 +2,4 @@ beautifulsoup4
 humanize
 requests
 six
-clint
 pycurl

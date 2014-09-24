@@ -77,7 +77,7 @@ class DownloadManager(object):
     eta_limit = 2592000  # 30 days
 
     def __init__(self, url, path=None, session=None, show_progress=True,
-                 auto_resume=True):
+                 resume=True, auto_retry=True):
         """
         :param str url: URL of the file to be downloaded
         :param str path: local path for the downloaded file; if None, it will
@@ -85,15 +85,19 @@ class DownloadManager(object):
         :param session: session used to download
         :type session: `class:requests.Session`
         :param bool show_progress: whether to show download progress
-        :param bool auto_resume: whether to automatically resume download (by
+        :param bool resume: whether to resume download (by
             filename)
+        :param bool auto_retry: whether to retry automatically upon closed
+            transfer until the file's download is finished
         """
         self.url = url
         self.path = self._get_path(path)
         self.session = session
         self.show_progress = show_progress
-        self.auto_resume = auto_resume
+        self.resume = resume
+        self.auto_retry = auto_retry
         self.start_time = None
+        self.content_length = 0
         self.downloaded = 0
         self._cookie_header = self._get_cookie_header()
 
@@ -123,7 +127,7 @@ class DownloadManager(object):
         """Sending cURL request to download"""
         c = pycurl.Curl()
         # Resume download
-        if os.path.exists(self.path) and self.auto_resume:
+        if os.path.exists(self.path) and self.resume:
             mode = 'ab'
             self.downloaded = os.path.getsize(self.path)
             c.setopt(pycurl.RESUME_FROM, self.downloaded)
@@ -138,6 +142,21 @@ class DownloadManager(object):
             c.setopt(c.NOPROGRESS, 0)
             c.setopt(c.PROGRESSFUNCTION, self.progress)
             c.perform()
+
+    def start(self):
+        """Start downloading"""
+        if not self.auto_retry:
+            self.curl()
+            return
+        while not self.is_finished:
+            try:
+                self.curl()
+            except pycurl.error as e:
+                # transfer closed with n bytes remaining to read
+                if e.args[0] == 18:
+                    pass
+                else:
+                    raise e
 
     def progress(self, download_t, download_d, upload_t, upload_d):
         if not self.show_progress:
@@ -157,9 +176,12 @@ class DownloadManager(object):
             eta_s = 'n/a'
         downloaded = self.downloaded + download_d
         download_ds = naturalsize(downloaded, binary=True)
+        if self.content_length == 0:
+            self.content_length = self.downloaded + download_t
+        percent = int(downloaded / (self.content_length) * 100)
         params = {
             'downloaded': download_ds,
-            'percent': int(downloaded / (self.downloaded + download_t) * 100),
+            'percent': percent,
             'speed': speed_s,
             'eta': eta_s,
         }
@@ -167,13 +189,18 @@ class DownloadManager(object):
         sys.stderr.write(p)
         sys.stderr.flush()
 
+    @property
+    def is_finished(self):
+        if os.path.exists(self.path):
+            return self.content_length == os.path.getsize(self.path)
+
     def done(self):
         sys.stderr.write('\n')
         sys.stderr.flush()
 
 
 def download(url, path=None, session=None, show_progress=True,
-             auto_resume=True):
+             resume=True, auto_retry=True):
     """Download using download manager"""
-    dm = DownloadManager(url, path, session, show_progress, auto_resume)
-    dm.curl()
+    dm = DownloadManager(url, path, session, show_progress, resume, auto_retry)
+    dm.start()
