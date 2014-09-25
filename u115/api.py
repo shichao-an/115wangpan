@@ -596,7 +596,8 @@ class API(object):
         src_url = 'http://115.com'
         r = self.http.get(src_url)
         soup = BeautifulSoup(r.content)
-        text = soup.find_all('script')[7].text
+        scripts = [script.text for script in soup.find_all('script')]
+        text = '\n'.join(scripts)
         pattern = "%s = (.*);" % (variable.upper())
         m = re.search(pattern, text)
         if not m:
