@@ -10,6 +10,7 @@ from requests.utils import unquote as _unquote
 from humanize import naturalsize
 
 PY3 = sys.version_info[0] == 3
+STREAM = sys.stderr
 
 if PY3:
     from urllib.parse import urlparse
@@ -73,7 +74,7 @@ def pjoin(*args):
 class DownloadManager(object):
     """Donwload manager that displays progress"""
     progress_template = \
-        '%(percent)6d%% %(downloaded)12s %(speed)15s %(eta)18s ETA\r'
+        '%(percent)6d%% %(downloaded)12s %(speed)15s %(eta)18s ETA'
     eta_limit = 2592000  # 30 days
 
     def __init__(self, url, path=None, session=None, show_progress=True,
@@ -185,9 +186,12 @@ class DownloadManager(object):
             'speed': speed_s,
             'eta': eta_s,
         }
-        p = self.progress_template % params
-        sys.stderr.write(p)
-        sys.stderr.flush()
+        if STREAM.isatty():
+            p = (self.progress_template + '\r') % params
+        else:
+            p = (self.progress_template + '\n') % params
+        STREAM.write(p)
+        STREAM.flush()
 
     @property
     def is_finished(self):
@@ -195,8 +199,8 @@ class DownloadManager(object):
             return self.content_length == os.path.getsize(self.path)
 
     def done(self):
-        sys.stderr.write('\n')
-        sys.stderr.flush()
+        STREAM.write('\n')
+        STREAM.flush()
 
 
 def download(url, path=None, session=None, show_progress=True,
