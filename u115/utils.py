@@ -101,6 +101,7 @@ class DownloadManager(object):
         self.content_length = 0
         self.downloaded = 0
         self._cookie_header = self._get_cookie_header()
+        self._last_time = 0.0
 
     def __del__(self):
         self.done()
@@ -189,6 +190,14 @@ class DownloadManager(object):
         if STREAM.isatty():
             p = (self.progress_template + '\r') % params
         else:
+            current_time = time.time()
+            if self._last_time == 0.0:
+                self._last_time = current_time
+            else:
+                interval = current_time - self._last_time
+                if interval < 0.5:
+                    return
+                self._last_time = current_time
             p = (self.progress_template + '\n') % params
         STREAM.write(p)
         STREAM.flush()
