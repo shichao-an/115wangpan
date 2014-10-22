@@ -8,3 +8,4 @@ dist
 .tox
 run.py
 .credentials
+tags
