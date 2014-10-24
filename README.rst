@@ -69,6 +69,12 @@ Usage
     <Directory: 离线下载>
 
 
+Helpers
+-------
+
+* `115wangpan-dl <https://gist.github.com/shichao-an/129969edca4fc1282296>`_
+
+
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
    :target: http://travis-ci.org/shichao-an/115wangpan
 .. |PyPI version| image:: https://pypip.in/v/115wangpan/badge.png
