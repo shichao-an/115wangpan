@@ -72,7 +72,8 @@ Usage
 Helpers
 -------
 
-* `115wangpan-dl <https://gist.github.com/shichao-an/129969edca4fc1282296>`_
+* `115wangpan-dl <https://gist.github.com/shichao-an/129969edca4fc1282296>`_: file download script
+* `115wangpan-up <https://gist.github.com/shichao-an/fa09286436d6f7118b97>`_: torrent upload script
 
 
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
