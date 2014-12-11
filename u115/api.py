@@ -187,6 +187,9 @@ class API(object):
             passport.status = 'FAILED'
             raise AuthenticationError(msg)
 
+    def get_user_info(self):
+        return self._req_get_user_qu()
+
     @property
     def has_logged_in(self):
         """Check whether the API has logged in"""
@@ -549,6 +552,17 @@ class API(object):
             msg = 'Failed to delete this file or directory.'
             print(res.content['error'])
             raise APIError(msg)
+
+    def _req_get_user_qu(self):
+        url = 'http://my.115.com/'
+        data = {
+            'ct': 'ajax',
+            'ac': 'get_user_aq'
+        }
+        req = Request(method='POST', url=url, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
 
     def _load_signatures(self, force=True):
         if not self._signatures or force:
