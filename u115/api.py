@@ -550,6 +550,9 @@ class API(object):
             return True
         else:
             msg = 'Failed to delete this file or directory.'
+            if 'errno' in res.content:
+                if res.content['errno'] == 990005:
+                    raise JobError()
             print(res.content['error'])
             raise APIError(msg)
 
@@ -1262,3 +1265,14 @@ class InvalidAPIAccess(APIError):
 class RequestFailure(APIError):
     """Request failure"""
     pass
+
+
+class JobError(APIError):
+    """Job running error (request multiple similar jobs simultaneously)"""
+    def __init__(self, *args, **kwargs):
+        content = kwargs.pop('content', None)
+        self.content = content
+        if not args:
+            msg = 'Your account has a similar job running. Try again later.'
+            args = (msg,)
+        super(APIError, self).__init__(*args, **kwargs)
