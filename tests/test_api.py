@@ -59,12 +59,10 @@ class TestAPI(TestCase):
                 td = t.directory
                 entries = td.list()
                 for entry in entries:
-                    assert isinstance(entry, Directory)
-                    files = entry.list()
-                    f = files[0]
-                    assert isinstance(f, File)
-                    assert f.get_download_url()
-                    break
+                    if isinstance(entry, Directory):
+                        entry.list()
+                    elif isinstance(entry, File):
+                        assert entry.url
 
     def test_delete_file(self):
         tasks = self.api.get_tasks()
@@ -87,6 +85,8 @@ class TestAPI(TestCase):
                 assert f1.delete()
                 d2.reload()
                 assert d2.count == d2_count - 1
+                # Sleep to avoid JobError
+                time.sleep(2)
                 assert d2.delete()
                 d1.reload()
                 assert d1.count == d1_count - 1
