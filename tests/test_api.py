@@ -94,7 +94,7 @@ class TestAPI(TestCase):
     def test_add_delete_task_bt(self):
         h1 = TEST_TORRENT1['info_hash']
         h2 = TEST_TORRENT2['info_hash']
-        tasks = self.api.get_tasks()
+        tasks = self.api.get_tasks(LARGE_COUNT)
         for task in tasks:
             if task.info_hash == h1:
                 assert task.delete()
