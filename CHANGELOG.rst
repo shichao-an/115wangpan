@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.3.1 (2015-02-03)
+------------------
+
+- Fixed broken release 0.3.0 due to a missing dependency
+
+0.3.0 (2015-02-03)
+------------------
+
+- Used external package "homura" to replace downloader utility
+- Merge #8: added add_task_url  API 
+
 0.2.4 (2014-10-09)
 ------------------
 
