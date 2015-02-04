@@ -267,16 +267,14 @@ class API(object):
             return t
         return t.submit()
 
-    def add_task_url(self):
+    def add_task_url(self, target_url):
         """
         Added a new URL task (VIP only)
 
-        .. warning::
-
-           This method has not yet implemented.
+        :param target_url URL: the URL of the file that to be downloaded
 
         """
-        raise NotImplementedError
+        return self._req_lixian_add_task_url(target_url)
 
     def get_storage_info(self, human=False):
         """
@@ -424,6 +422,25 @@ class API(object):
             'info_hash': t.info_hash,
             'wanted': wanted,
             'savepath': t.name,
+            'uid': self.passport.user_id,
+            'sign': self._signatures['offline_space'],
+            'time': self._lixian_timestamp,
+        }
+        req = Request(method='POST', url=url, params=params, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return True
+        else:
+            print(res.content.get('error_msg'))
+            raise RequestFailure('Failed to create new task.')
+
+    def _req_lixian_add_task_url(self, target_url):
+
+        self._load_signatures()
+        url = 'http://115.com/lixian/'
+        params = {'ct': 'lixian', 'ac': 'add_task_url'}
+        data = {
+            'url': target_url,
             'uid': self.passport.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,

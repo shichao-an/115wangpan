@@ -20,6 +20,9 @@ TEST_TORRENT2 = {
     'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
 }
 
+TEST_TARGET_URL = 'https://lh6.googleusercontent.com/-3Xz3dFlEzMs\
+    /AAAAAAAAAAI/AAAAAAAAA20/RsPzPBYr4Wg/photo.jpg'
+
 
 class TestAPI(TestCase):
     def __init__(self, *args, **kwargs):
@@ -118,6 +121,16 @@ class TestAPI(TestCase):
         res = self.api.get_storage_info(human=True)
         assert 'total' in res
         assert 'used' in res
+
+    def test_add_task_url(self):
+        '''
+        NOT FINISHED YET!
+        TODO:
+            * Check the target_url is not in the task list already.
+            * add the target_url
+            * checked it added successfully
+        '''
+        res = self.api.add_task_url(TEST_TARGET_URL)
 
 
 class TestPrivateAPI(TestCase):
