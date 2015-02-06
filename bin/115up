@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import argparse
+from u115 import API
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(usage='%(prog)s [options]',
+                                     prog='115up')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-l', '--link',
+                       help="link resource (HTTP, FTP, eD2k or Magnet)")
+    group.add_argument('-t', '--torrent',
+                       help="torrent file")
+    args = parser.parse_args()
+    return args
+
+
+def add_new_task(args):
+    api = API()
+    api.login()
+    if args.torrent is not None:
+        r = api.add_task_bt(args.torrent)
+    elif args.link is not None:
+        r = api.add_task_url(args.link)
+    if r:
+        print('Task is successfully created.')
+    tasks = api.get_tasks()
+    t1 = tasks[0]
+    print(t1, t1.status_human)
+
+
+def main():
+    args = parse_args()
+    add_new_task(args)
+
+
+if __name__ == '__main__':
+    main()

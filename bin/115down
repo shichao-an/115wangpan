@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import argparse
+from u115 import API, File, Directory
+
+DRY_RUN = False
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(prog='115dl')
+    parser.add_argument('entry_num', nargs='?', help='entry number',
+                        type=int)
+    parser.add_argument('sub_num', nargs='?',
+                        help='sub-entry number or star (*) for all')
+    parser.add_argument('-t', '--tasks', action='store_true',
+                        help="list tasks")
+    parser.add_argument('-l', '--list', action='store_true', default=True,
+                        help="list the downloads directory")
+    parser.add_argument('-n', '--count', default=25, type=int,
+                        help="number of entries to get")
+    parser.add_argument('-s', '--dry-run', action='store_true',
+                        help="print urls instead of downloading")
+    args = parser.parse_args()
+    if args.entry_num is not None:
+        if args.tasks is True:
+            raise parser.error('Cannot list entries of tasks.')
+        if args.entry_num <= 0:
+            msg = 'Entry number must be a positive integer.'
+            raise parser.error(msg)
+    if args.sub_num is not None:
+        msg = 'Sub-entry number must be a positive integer or star (*).'
+        if args.sub_num.isdigit():
+            try:
+                args.sub_num = int(args.sub_num)
+                assert args.sub_num > 0
+            except:
+                raise parser.error(msg)
+        else:
+            if args.sub_num != '*':
+                raise parser.error(msg)
+    return args
+
+
+def get_entries(entry_num, sub_num, count, list_tasks=False):
+    api = API()
+    api.login()
+    if list_tasks is True:
+        entries = api.get_tasks(count)
+    else:
+        entries = api.downloads_directory.list(count)
+    if entry_num is None:
+        for k, entry in enumerate(entries, start=1):
+            print(k, repr(entry))
+    elif entry_num is not None and sub_num is None:
+        entry = entries[entry_num - 1]
+        # entry may be a File object
+        if isinstance(entry, File):
+            download_file(entry)
+        else:
+            # Directory or Task object
+            list_entry(entry)
+    elif entry_num is not None and sub_num is not None:
+        entry = entries[entry_num - 1]
+        print(repr(entry))
+        subs = entry.list()
+        if sub_num == '*':
+            for f in subs:
+                print(repr(f))
+                download_file(f)
+        else:
+            f = subs[sub_num - 1]
+            print(repr(f))
+            download_file(f)
+
+
+def list_entry(entry):
+    print(repr(entry))
+    for k, f in enumerate(entry.list(), start=1):
+        print('\t', k, repr(f))
+
+
+def download_file(f):
+    if isinstance(f, File):
+        print(f.url)
+        if not DRY_RUN:
+            f.download()
+    elif isinstance(f, Directory):
+        ffiles = f.list()
+        for ff in ffiles:
+            print(ff)
+            print(ff.url)
+            if not DRY_RUN:
+                ff.download()
+
+
+def main():
+    args = parse_args()
+    global DRY_RUN
+    DRY_RUN = args.dry_run
+    get_entries(args.entry_num, args.sub_num, args.count, args.tasks)
+
+
+if __name__ == '__main__':
+    main()
