@@ -2,7 +2,17 @@
 
 from __future__ import print_function
 import argparse
+import os
 from u115 import API, File, Directory
+
+# SOCKS proxy
+if os.environ.get('PROXY_ADDR'):
+    proxy_addr = os.environ.get('PROXY_ADDR')
+    proxy_port = int(os.environ.get('PROXY_PORT'))
+    import socket
+    import socks
+    socks.set_default_proxy(socks.SOCKS5, proxy_addr, proxy_port)
+    socket.socket = socks.socksocket
 
 DRY_RUN = False
 
@@ -51,14 +61,17 @@ def get_entries(entry_num, sub_num, count, list_tasks=False):
         entries = api.downloads_directory.list(count)
     if entry_num is None:
         for k, entry in enumerate(entries, start=1):
-            print(k, repr(entry))
+            if list_tasks:
+                print(k, repr(entry), entry.status_human)
+            else:
+                print(k, repr(entry))
     elif entry_num is not None and sub_num is None:
         entry = entries[entry_num - 1]
         # entry may be a File object
         if isinstance(entry, File):
             download_file(entry)
         else:
-            # Directory or Task object
+            # Directory object
             list_entry(entry)
     elif entry_num is not None and sub_num is not None:
         entry = entries[entry_num - 1]

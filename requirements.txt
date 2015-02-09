@@ -4,3 +4,4 @@ humanize
 requests
 six
 pycurl
+PySocks
