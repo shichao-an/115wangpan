@@ -13,7 +13,6 @@ if os.environ.get('PROXY_ADDR'):
     import socks
     socks.set_default_proxy(socks.SOCKS5, proxy_addr, proxy_port)
     socket.socket = socks.socksocket
-
 DRY_RUN = False
 
 
@@ -27,8 +26,10 @@ def parse_args():
                         help="list tasks")
     parser.add_argument('-l', '--list', action='store_true', default=True,
                         help="list the downloads directory")
-    parser.add_argument('-n', '--count', default=25, type=int,
+    parser.add_argument('-n', '--count', default=30, type=int,
                         help="number of entries to get")
+    parser.add_argument('-m', '--sub-count', default=30, type=int,
+                        dest='sub_count', help="number of sub-entries to get")
     parser.add_argument('-s', '--dry-run', action='store_true',
                         help="print urls instead of downloading")
     args = parser.parse_args()
@@ -52,7 +53,7 @@ def parse_args():
     return args
 
 
-def get_entries(entry_num, sub_num, count, list_tasks=False):
+def get_entries(entry_num, sub_num, count, sub_count, list_tasks=False):
     api = API()
     api.login()
     if list_tasks is True:
@@ -72,11 +73,11 @@ def get_entries(entry_num, sub_num, count, list_tasks=False):
             download_file(entry)
         else:
             # Directory object
-            list_entry(entry)
+            list_entry(entry, sub_count)
     elif entry_num is not None and sub_num is not None:
         entry = entries[entry_num - 1]
         print(repr(entry))
-        subs = entry.list()
+        subs = entry.list(sub_count)
         if sub_num == '*':
             for f in subs:
                 print(repr(f))
@@ -87,9 +88,9 @@ def get_entries(entry_num, sub_num, count, list_tasks=False):
             download_file(f)
 
 
-def list_entry(entry):
+def list_entry(entry, sub_count):
     print(repr(entry))
-    for k, f in enumerate(entry.list(), start=1):
+    for k, f in enumerate(entry.list(sub_count), start=1):
         print('\t', k, repr(f))
 
 
@@ -111,7 +112,8 @@ def main():
     args = parse_args()
     global DRY_RUN
     DRY_RUN = args.dry_run
-    get_entries(args.entry_num, args.sub_num, args.count, args.tasks)
+    get_entries(args.entry_num, args.sub_num, args.count, args.sub_count,
+                args.tasks)
 
 
 if __name__ == '__main__':
