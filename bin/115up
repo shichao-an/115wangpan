@@ -6,6 +6,16 @@ import argparse
 import getpass
 from u115 import API
 
+# SOCKS proxy
+if os.environ.get('PROXY_ADDR'):
+    proxy_addr = os.environ.get('PROXY_ADDR')
+    proxy_port = int(os.environ.get('PROXY_PORT'))
+    import socket
+    import socks
+    socks.set_default_proxy(socks.SOCKS5, proxy_addr, proxy_port)
+    socket.socket = socks.socksocket
+DRY_RUN = False
+
 
 def parse_args():
     parser = argparse.ArgumentParser(usage='%(prog)s [options]',
