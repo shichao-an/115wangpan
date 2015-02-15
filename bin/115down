@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import argparse
+import getpass
 import os
 from u115 import API, File, Directory
 
@@ -18,6 +19,10 @@ DRY_RUN = False
 
 def parse_args():
     parser = argparse.ArgumentParser(prog='115dl')
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('-u', '--username', help='account or username')
+    group.add_argument('-d', '--section', default='default',
+                       help='section name in credential file')
     parser.add_argument('entry_num', nargs='?', help='entry number',
                         type=int)
     parser.add_argument('sub_num', nargs='?',
@@ -53,9 +58,10 @@ def parse_args():
     return args
 
 
-def get_entries(entry_num, sub_num, count, sub_count, list_tasks=False):
+def get_entries(username, password, section, entry_num, sub_num,
+                count, sub_count, list_tasks=False):
     api = API()
-    api.login()
+    api.login(username, password, section)
     if list_tasks is True:
         entries = api.get_tasks(count)
     else:
@@ -112,8 +118,11 @@ def main():
     args = parse_args()
     global DRY_RUN
     DRY_RUN = args.dry_run
-    get_entries(args.entry_num, args.sub_num, args.count, args.sub_count,
-                args.tasks)
+    password = None
+    if args.username is not None:
+        password = getpass.getpass()
+    get_entries(args.username, password, args.section, args.entry_num,
+                args.sub_num, args.count, args.sub_count, args.tasks)
 
 
 if __name__ == '__main__':

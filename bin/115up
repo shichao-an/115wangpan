@@ -3,24 +3,32 @@
 
 from __future__ import print_function
 import argparse
+import getpass
 from u115 import API
 
 
 def parse_args():
     parser = argparse.ArgumentParser(usage='%(prog)s [options]',
                                      prog='115up')
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-l', '--link',
-                       help="link resource (HTTP, FTP, eD2k or Magnet)")
-    group.add_argument('-t', '--torrent',
-                       help="torrent file")
+    group1 = parser.add_mutually_exclusive_group(required=True)
+    group1.add_argument('-l', '--link',
+                        help="link resource (HTTP, FTP, eD2k or Magnet)")
+    group1.add_argument('-t', '--torrent',
+                        help="torrent file")
+    group2 = parser.add_mutually_exclusive_group(required=False)
+    group2.add_argument('-u', '--username', help='account or username')
+    group2.add_argument('-d', '--section', default='default',
+                        help='section name in credential file')
     args = parser.parse_args()
     return args
 
 
 def add_new_task(args):
+    password = None
+    if args.username is not None:
+        password = getpass.getpass()
     api = API()
-    api.login()
+    api.login(args.username, password, args.section)
     if args.torrent is not None:
         r = api.add_task_bt(args.torrent)
     elif args.link is not None:
