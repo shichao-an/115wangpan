@@ -211,14 +211,14 @@ class API(object):
     def downloads_directory(self):
         """Default directory for downloaded files"""
         if self._downloads_directory is None:
-            self._load_lixian_space()
+            self._load_downloads_directory()
         return self._downloads_directory
 
     @property
     def torrents_directory(self):
         """Default directory that stores uploaded torrents"""
         if self._torrents_directory is None:
-            self._load_lixian_space()
+            self._load_torrents_directory()
         return self._torrents_directory
 
     @property
@@ -372,7 +372,7 @@ class API(object):
 
     def _req_lixian_get_id(self, torrent=False):
         """Get `cid` of lixian space directory"""
-        url = 'http://115.com/lixian/'
+        url = 'http://115.com/'
         params = {
             'ct': 'lixian',
             'ac': 'get_id',
@@ -609,13 +609,25 @@ class API(object):
         if str(kwargs['pid']) != str(cid):
             return Directory(api=self, **kwargs)
 
-    def _load_lixian_space(self):
-        """Load downloads and torrents directory"""
+    def _load_torrents_directory(self):
+        """
+        Load torrents directory
+
+        If it does not exist yet, this request will cause the system to create
+        one
+        """
+        r = self._req_lixian_get_id(torrent=True)
+        self._downloads_directory = self._load_directory(r['cid'])
+
+    def _load_downloads_directory(self):
+        """
+        Load downloads directory
+
+        If it does not exist yet, this request will cause the system to create
+        one
+        """
         r = self._req_lixian_get_id(torrent=False)
-        downloads_cid = r['dest_cid']
-        torrent_cid = r['cid']
-        self._downloads_directory = self._load_directory(downloads_cid)
-        self._torrents_directory = self._load_directory(torrent_cid)
+        self._downloads_directory = self._load_directory(r['cid'])
 
     def _load_upload_url(self):
         res = self._parse_src_js_var('upload_config_h5')
