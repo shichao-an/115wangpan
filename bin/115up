@@ -15,7 +15,6 @@ if os.environ.get('PROXY_ADDR'):
     import socks
     socks.set_default_proxy(socks.SOCKS5, proxy_addr, proxy_port)
     socket.socket = socks.socksocket
-DRY_RUN = False
 
 
 def parse_args():
