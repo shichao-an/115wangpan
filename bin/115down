@@ -69,7 +69,8 @@ def get_entries(username, password, section, entry_num, sub_num,
     if entry_num is None:
         for k, entry in enumerate(entries, start=1):
             if list_tasks:
-                print(k, repr(entry), entry.status_human)
+                status = '[%s]' % entry.status_human
+                print(k, status, repr(entry))
             else:
                 print(k, repr(entry))
     elif entry_num is not None and sub_num is None:
