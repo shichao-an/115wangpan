@@ -14,6 +14,7 @@ PROJECT_PATH = os.path.abspath(pjoin(_d, os.pardir))
 PROJECT_CREDENTIALS = pjoin(PROJECT_PATH, '.credentials')
 USER_CREDENTIALS = pjoin(user_dir, '.115')
 CREDENTIALS = None
+COOKIES_FILENAME = pjoin(user_dir, '.115cookies')
 
 if os.path.exists(PROJECT_CREDENTIALS):
     CREDENTIALS = PROJECT_CREDENTIALS
