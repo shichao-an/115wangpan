@@ -11,11 +11,19 @@ from hashlib import sha1
 from bs4 import BeautifulSoup
 from u115 import conf
 from u115.utils import (get_timestamp, get_utcdatetime, string_to_datetime,
-                        eval_path, quote, utf8_encode, txt_type, PY3)
+                        eval_path, quote, unquote, utf8_encode, txt_type, PY3)
 from homura import download
+
+if PY3:
+    from http import cookiejar as cookielib
+else:
+    import cookielib
 
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) \
 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
+LOGIN_URL = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
+LOGOUT_URL = 'http://passport.115.com/?ac=logout'
+CHECKPOINT_URL = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
 
 
 class RequestHandler(object):
@@ -129,14 +137,19 @@ class API(object):
     num_tasks_per_page = 30
     web_api_url = 'http://web.api.115.com/files'
 
-    def __init__(self, auto_logout=True):
+    def __init__(self, auto_logout=True, persistent=False):
         """
         :param bool auto_logout: whether to logout automatically when
             :class:`.API` object is destroyed
+        :param bool persistent: whether to use persistent session that stores
+            cookies on disk
         """
         self.auto_logout = auto_logout
+        self.persistent = persistent
         self.passport = None
         self.http = RequestHandler()
+        self._user_id = None
+        self._username = None
         self._signatures = {}
         self._upload_url = None
         self._lixian_timestamp = None
@@ -148,6 +161,14 @@ class API(object):
     def __del__(self):
         if self.auto_logout and self.has_logged_in:
             self.logout()
+
+    @property
+    def cookies(self):
+        return self.http.session.cookies
+
+    @cookies.setter
+    def cookies(self, cookies):
+        self.http.session.cookies = cookies
 
     def login(self, username=None, password=None,
               section='default'):
@@ -169,14 +190,13 @@ class API(object):
             password = credential['password']
 
         passport = Passport(username, password)
-        r = self.http.post(passport.login_url, passport.form)
+        r = self.http.post(LOGIN_URL, passport.form)
 
         if r.state is True:
             # Bind this passport to API
             self.passport = passport
             passport.data = r.content['data']
-            passport.user_id = r.content['data']['USER_ID']
-            passport.status = 'LOGGED_IN'
+            self.user_id = r.content['data']['USER_ID']
             return True
         else:
             msg = None
@@ -185,26 +205,45 @@ class API(object):
                     msg = 'Account does not exist.'
                 elif r.content['err_name'] == 'passwd':
                     msg = 'Password is incorrect.'
-            passport.status = 'FAILED'
             raise AuthenticationError(msg)
 
     def get_user_info(self):
-        return self._req_get_user_qu()
+        return self._req_get_user_aq()
+
+    @property
+    def user_id(self):
+        if self._user_id is None:
+            if self.has_logged_in:
+                self._user_id = self._req_get_user_aq()['data']['uid']
+            else:
+                raise AuthenticationError('Not logged in.')
+        return self._user_id
+
+    @property
+    def username(self):
+        if self._username is None:
+            if self.has_logged_in:
+                self._username = self._get_username()
+            else:
+                raise AuthenticationError('Not logged in.')
+        return self._username
 
     @property
     def has_logged_in(self):
         """Check whether the API has logged in"""
-        if self.passport is not None and self.passport.user_id is not None:
-            params = {'user_id': self.passport.user_id}
-            r = self.http.get(self.passport.checkpoint_url, params=params)
-            if r.state is False:
-                return True
+        r = self.http.get(CHECKPOINT_URL)
+        if r.state is False:
+            return True
+        self._user_id = None
+        self._username = None
         return False
 
     def logout(self):
         """Log out"""
-        self.http.get(self.passport.logout_url)
-        self.passport.status = 'LOGGED_OUT'
+        self.http.get(LOGOUT_URL)
+        # Clear cached user_id and username
+        self._user_id = None
+        self._username = None
         return True
 
     @property
@@ -356,7 +395,7 @@ class API(object):
         self._load_signatures()
         data = {
             'page': page,
-            'uid': self.passport.user_id,
+            'uid': self.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
@@ -397,7 +436,7 @@ class API(object):
         data = {
             'pickcode': u.pickcode,
             'sha1': u.sha,
-            'uid': self.passport.user_id,
+            'uid': self.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
@@ -422,7 +461,7 @@ class API(object):
             'info_hash': t.info_hash,
             'wanted': wanted,
             'savepath': t.name,
-            'uid': self.passport.user_id,
+            'uid': self.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
@@ -441,7 +480,7 @@ class API(object):
         params = {'ct': 'lixian', 'ac': 'add_task_url'}
         data = {
             'url': target_url,
-            'uid': self.passport.user_id,
+            'uid': self.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
@@ -460,7 +499,7 @@ class API(object):
         params = {'ct': 'lixian', 'ac': 'task_del'}
         data = {
             'hash[0]': t.info_hash,
-            'uid': self.passport.user_id,
+            'uid': self.user_id,
             'sign': self._signatures['offline_space'],
             'time': self._lixian_timestamp,
         }
@@ -574,7 +613,7 @@ class API(object):
             print(res.content['error'])
             raise APIError(msg)
 
-    def _req_get_user_qu(self):
+    def _req_get_user_aq(self):
         url = 'http://my.115.com/'
         data = {
             'ct': 'ajax',
@@ -648,9 +687,20 @@ class API(object):
         pattern = "%s = (.*);" % (variable.upper())
         m = re.search(pattern, text)
         if not m:
-            msg = 'Cannot parse source JavaScript for %s' % variable
+            msg = 'Cannot parse source JavaScript for %s.' % variable
             raise APIError(msg)
         return json.loads(m.group(1).strip())
+
+    def _get_username(self):
+        return unquote(self._get_cookie('OOFL'))
+
+    def _get_cookie(self, name):
+        for cookie in self.cookies:
+            if cookie.name == name:
+                return cookie.value
+        else:
+            msg = 'No cookie named "%s" found.'
+            raise APIError(msg)
 
 
 class Base(object):
@@ -680,25 +730,14 @@ class Passport(Base):
     :ivar dict form: a dictionary of POST data to login
     :ivar int user_id: user ID of the authenticated user
     :ivar dict data: data returned upon login
-    :ivar str status: status of this passport
-
-        * `NEW`: passport is newly created
-        * `LOGGED_IN`: successfully logged in with this passport
-        * `LOGGED_OUT`: logged out
-        * `FAILED`: failed to log in
 
     """
-    login_url = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
-    logout_url = 'http://passport.115.com/?ac=logout'
-    checkpoint_url = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
         self.form = self._form()
-        self.user_id = None
         self.data = None
-        self.status = 'NEW'
 
     def _form(self):
         vcode = self._vcode()
