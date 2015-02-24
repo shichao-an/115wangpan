@@ -146,7 +146,8 @@ class API(object):
             cookies on disk
         :param str cookies_filename: path to the cookies file, use default
             path (`~/.115cookies`) if none
-        :param str cookies_type: a string representing FileCookieJar subclass,
+        :param str cookies_type: a string representing
+            :class:`cookielib.FileCookieJar` subclass,
             `LWPCookieJar` (default) or `MozillaCookieJar`
         """
         self.auto_logout = auto_logout
