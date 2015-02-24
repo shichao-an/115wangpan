@@ -137,17 +137,45 @@ class API(object):
     num_tasks_per_page = 30
     web_api_url = 'http://web.api.115.com/files'
 
-    def __init__(self, auto_logout=True, persistent=False):
+    def __init__(self, auto_logout=True, persistent=False,
+                 cookies_filename=None, cookies_type='LWPCookieJar'):
         """
         :param bool auto_logout: whether to logout automatically when
             :class:`.API` object is destroyed
         :param bool persistent: whether to use persistent session that stores
             cookies on disk
+        :param str cookies_filename: path to the cookies file, use default
+            path (`~/.115cookies`) if none
+        :param str cookies_type: a string representing FileCookieJar subclass,
+            `LWPCookieJar` (default) or `MozillaCookieJar`
         """
         self.auto_logout = auto_logout
         self.persistent = persistent
+        self.cookies_filename = cookies_filename
+        self.cookies_type = cookies_type
         self.passport = None
         self.http = RequestHandler()
+        # Cached variabled to decrease API hits
+        self._user_id = None
+        self._username = None
+        self._signatures = {}
+        self._upload_url = None
+        self._lixian_timestamp = None
+        self._downloads_directory = None
+        self._torrents_directory = None
+        self._task_count = None
+        self._task_quota = None
+        if self.persistent:
+            self.load_cookies()
+
+    def __del__(self):
+        if self.auto_logout and self.has_logged_in:
+            self.logout()
+        if not self.auto_logout and self.has_logged_in:
+            if self.persistent:
+                self.save_cookies()
+
+    def _reset_cache(self):
         self._user_id = None
         self._username = None
         self._signatures = {}
@@ -158,16 +186,32 @@ class API(object):
         self._task_count = None
         self._task_quota = None
 
-    def __del__(self):
-        if self.auto_logout and self.has_logged_in:
-            self.logout()
+    def _init_cookies(self):
+        cookies_class = getattr(cookielib, self.cookies_type)
+        f = self.cookies_filename or conf.COOKIES_FILENAME
+        self.cookies = cookies_class(f)
+
+    def load_cookies(self, ignore_discard=True, ignore_expires=True):
+        """Load cookies from the file"""
+        self._init_cookies()
+        self.cookies.load(ignore_discard=ignore_discard,
+                          ignore_expires=ignore_expires)
+        self._reset_cache()
+
+    def save_cookies(self, ignore_discard=True, ignore_expires=True):
+        """Save cookeis to the file"""
+        self._init_cookies()
+        self.cookies.save(ignore_discard=ignore_discard,
+                          ignore_expires=ignore_expires)
 
     @property
     def cookies(self):
+        """Cookies getter shortcut"""
         return self.http.session.cookies
 
     @cookies.setter
     def cookies(self, cookies):
+        """Cookies setter shortcut"""
         self.http.session.cookies = cookies
 
     def login(self, username=None, password=None,
@@ -196,7 +240,7 @@ class API(object):
             # Bind this passport to API
             self.passport = passport
             passport.data = r.content['data']
-            self.user_id = r.content['data']['USER_ID']
+            self._user_id = r.content['data']['USER_ID']
             return True
         else:
             msg = None
@@ -234,16 +278,14 @@ class API(object):
         r = self.http.get(CHECKPOINT_URL)
         if r.state is False:
             return True
-        self._user_id = None
-        self._username = None
+        # If logged out, flush cache
+        self._reset_cache()
         return False
 
     def logout(self):
         """Log out"""
         self.http.get(LOGOUT_URL)
-        # Clear cached user_id and username
-        self._user_id = None
-        self._username = None
+        self._reset_cache()
         return True
 
     @property
