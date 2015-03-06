@@ -1000,7 +1000,7 @@ class Directory(BaseFile):
 
         :param int count: number of entries to load. This value should never
             be greater than self.count
-        :param int page: page number (starting from 0)
+        :param int page: page number (starting from 1)
 
         """
         if entries is None:
