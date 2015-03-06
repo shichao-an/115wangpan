@@ -555,7 +555,7 @@ class API(object):
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
                    show_dir=1, code=None, scid=None, snap=0, natsort=None,
-                   source=None):
+                   source=None, type=0, format='json', star=None):
         params = locals()
         del params['self']
         req = Request(method='GET', url=self.web_api_url, params=params)
