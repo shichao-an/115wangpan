@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import os
 from unittest import TestCase
 from u115.api import API, Torrent, Directory, File, TaskError, RequestFailure
 from u115.utils import pjoin
@@ -21,6 +22,7 @@ TEST_TORRENT2 = {
 }
 
 TEST_TARGET_URL = 'http://download.thinkbroadband.com/1MB.zip'
+TEST_COOKIE_FILE = pjoin(DATA_DIR, '115cookies')
 
 
 class TestAPI(TestCase):
@@ -140,3 +142,20 @@ class TestPrivateAPI(TestCase):
     def test_load_upload_url(self):
         url = self.api._load_upload_url()
         assert url
+
+
+class TestCookies(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestCookies, self).__init__(*args, **kwargs)
+        self.api = API(auto_logout=False, persistent=True,
+                       cookies_filename=TEST_COOKIE_FILE)
+        self.api.login(section='test')
+
+    def test_cookies(self):
+        self.api.__del__()
+        self.api = API(auto_logout=False, persistent=True,
+                       cookies_filename=TEST_COOKIE_FILE)
+        assert self.api.has_logged_in
+
+    def tearDown(self):
+        os.remove(TEST_COOKIE_FILE)
