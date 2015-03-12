@@ -9,7 +9,7 @@ import requests
 import time
 from hashlib import sha1
 from bs4 import BeautifulSoup
-from requests.cookies import RequestCookieJar
+from requests.cookies import RequestsCookieJar
 from u115 import conf
 from u115.utils import (get_timestamp, get_utcdatetime, string_to_datetime,
                         eval_path, quote, unquote, utf8_encode, txt_type, PY3)
@@ -27,11 +27,11 @@ LOGOUT_URL = 'http://passport.115.com/?ac=logout'
 CHECKPOINT_URL = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
 
 
-class RequestsLWPCookieJar(RequestCookieJar, cookielib.LWPCookieJar):
+class RequestsLWPCookieJar(cookielib.LWPCookieJar, RequestsCookieJar):
     pass
 
 
-class RequestsMozillaCookieJar(RequestCookieJar, cookielib.MozillaCookieJar):
+class RequestsMozillaCookieJar(cookielib.MozillaCookieJar, RequestsCookieJar):
     pass
 
 
@@ -198,20 +198,21 @@ class API(object):
 
     def _init_cookies(self):
         # RequestsLWPCookieJar or RequestsMozillaCookieJar
-        cookies_class = globals['Requests' + self.cookies_type]
+        cookies_class = globals()['Requests' + self.cookies_type]
         f = self.cookies_filename or conf.COOKIES_FILENAME
         self.cookies = cookies_class(f)
 
     def load_cookies(self, ignore_discard=True, ignore_expires=True):
         """Load cookies from the file"""
         self._init_cookies()
-        self.cookies.load(ignore_discard=ignore_discard,
-                          ignore_expires=ignore_expires)
-        self._reset_cache()
+        if os.path.exists(self.cookies.filename):
+            self.cookies.load(ignore_discard=ignore_discard,
+                              ignore_expires=ignore_expires)
+            self._reset_cache()
 
     def save_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Save cookeis to the file"""
-        self._init_cookies()
+        """Save cookies to the file"""
+        #self._init_cookies()
         self.cookies.save(ignore_discard=ignore_discard,
                           ignore_expires=ignore_expires)
 
