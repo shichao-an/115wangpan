@@ -9,6 +9,7 @@ import requests
 import time
 from hashlib import sha1
 from bs4 import BeautifulSoup
+from requests.cookies import RequestCookieJar
 from u115 import conf
 from u115.utils import (get_timestamp, get_utcdatetime, string_to_datetime,
                         eval_path, quote, unquote, utf8_encode, txt_type, PY3)
@@ -24,6 +25,14 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36'
 LOGIN_URL = 'http://passport.115.com/?ct=login&ac=ajax&is_ssl=1'
 LOGOUT_URL = 'http://passport.115.com/?ac=logout'
 CHECKPOINT_URL = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
+
+
+class RequestsLWPCookieJar(RequestCookieJar, cookielib.LWPCookieJar):
+    pass
+
+
+class RequestsMozillaCookieJar(RequestCookieJar, cookielib.MozillaCookieJar):
+    pass
 
 
 class RequestHandler(object):
@@ -188,7 +197,8 @@ class API(object):
         self._task_quota = None
 
     def _init_cookies(self):
-        cookies_class = getattr(cookielib, self.cookies_type)
+        # RequestsLWPCookieJar or RequestsMozillaCookieJar
+        cookies_class = globals['Requests' + self.cookies_type]
         f = self.cookies_filename or conf.COOKIES_FILENAME
         self.cookies = cookies_class(f)
 
