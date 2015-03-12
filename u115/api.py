@@ -28,10 +28,12 @@ CHECKPOINT_URL = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
 
 
 class RequestsLWPCookieJar(cookielib.LWPCookieJar, RequestsCookieJar):
+    """RequestsCookieJar compatible LWPCookieJar"""
     pass
 
 
 class RequestsMozillaCookieJar(cookielib.MozillaCookieJar, RequestsCookieJar):
+    """RequestsCookieJar compatible RequestsMozillaCookieJar"""
     pass
 
 
@@ -212,7 +214,9 @@ class API(object):
 
     def save_cookies(self, ignore_discard=True, ignore_expires=True):
         """Save cookies to the file"""
-        #self._init_cookies()
+        if not isinstance(self.cookies, cookielib.FileCookieJar):
+            msg = 'Cookies must be a cookielib.FileCookieJar object'
+            raise CookieError(msg)
         self.cookies.save(ignore_discard=ignore_discard,
                           ignore_expires=ignore_expires)
 
@@ -1362,6 +1366,14 @@ def _instantiate_torrent_file(torrent, kwargs):
     return TorrentFile(torrent, **kwargs)
 
 
+class CookieError(Exception):
+    """Cookie error"""
+    def __init__(self, *args, **kwargs):
+        content = kwargs.pop('content', None)
+        self.content = content
+        super(CookieError, self).__init__(*args, **kwargs)
+
+
 class APIError(Exception):
     """General error related to API"""
     def __init__(self, *args, **kwargs):
@@ -1398,4 +1410,4 @@ class JobError(APIError):
         if not args:
             msg = 'Your account has a similar job running. Try again later.'
             args = (msg,)
-        super(APIError, self).__init__(*args, **kwargs)
+        super(JobError, self).__init__(*args, **kwargs)
