@@ -145,8 +145,9 @@ class TestPrivateAPI(TestCase):
 
 
 class TestCookies(TestCase):
-    def __init__(self, *args, **kwargs):
-        super(TestCookies, self).__init__(*args, **kwargs)
+    def setUp(self):
+        if os.path.exists(TEST_COOKIE_FILE):
+            os.remove(TEST_COOKIE_FILE)
         self.api = API(auto_logout=False, persistent=True,
                        cookies_filename=TEST_COOKIE_FILE)
         self.api.login(section='test')
@@ -156,6 +157,3 @@ class TestCookies(TestCase):
         self.api = API(auto_logout=False, persistent=True,
                        cookies_filename=TEST_COOKIE_FILE)
         assert self.api.has_logged_in
-
-    def tearDown(self):
-        os.remove(TEST_COOKIE_FILE)
