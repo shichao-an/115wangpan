@@ -215,8 +215,8 @@ class API(object):
     def save_cookies(self, ignore_discard=True, ignore_expires=True):
         """Save cookies to the file"""
         if not isinstance(self.cookies, cookielib.FileCookieJar):
-            msg = 'Cookies must be a cookielib.FileCookieJar object'
-            raise CookieError(msg)
+            m = 'Cookies must be a cookielib.FileCookieJar object to be saved.'
+            raise APIError(m)
         self.cookies.save(ignore_discard=ignore_discard,
                           ignore_expires=ignore_expires)
 
@@ -1364,14 +1364,6 @@ def _instantiate_torrent_file(torrent, kwargs):
     kwargs['selected'] = True if kwargs['wanted'] == 1 else False
     del kwargs['wanted']
     return TorrentFile(torrent, **kwargs)
-
-
-class CookieError(Exception):
-    """Cookie error"""
-    def __init__(self, *args, **kwargs):
-        content = kwargs.pop('content', None)
-        self.content = content
-        super(CookieError, self).__init__(*args, **kwargs)
 
 
 class APIError(Exception):
