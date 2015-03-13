@@ -581,7 +581,7 @@ class API(object):
             :func:`Directory.list`
         """
         params = locals()
-        print(params)
+        #print(params)
         del params['self']
         req = Request(method='GET', url=self.aps_natsort_url, params=params)
         res = self.http.send(req)
@@ -594,7 +594,7 @@ class API(object):
                    show_dir=1, code=None, scid=None, snap=0, natsort=1,
                    source=None, type=0, format='json', star=None):
         params = locals()
-        print(params)
+        #print(params)
         del params['self']
         req = Request(method='GET', url=self.web_api_url, params=params)
         res = self.http.send(req)
