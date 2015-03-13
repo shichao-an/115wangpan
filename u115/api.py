@@ -750,15 +750,7 @@ class API(object):
         return json.loads(m.group(1).strip())
 
     def _get_username(self):
-        return unquote(self._get_cookie('OOFL'))
-
-    def _get_cookie(self, name):
-        for cookie in self.cookies:
-            if cookie.name == name:
-                return cookie.value
-        else:
-            msg = 'No cookie named "%s" found.'
-            raise APIError(msg)
+        return unquote(self.cookies.get('OOFL'))
 
 
 class Base(object):
