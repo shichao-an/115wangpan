@@ -147,6 +147,7 @@ class API(object):
 
     num_tasks_per_page = 30
     web_api_url = 'http://web.api.115.com/files'
+    aps_natsort_url = 'http://aps.115.com/natsort/files.php'
 
     def __init__(self, auto_logout=True, persistent=False,
                  cookies_filename=None, cookies_type='LWPCookieJar'):
@@ -567,6 +568,27 @@ class API(object):
             return True
         else:
             raise RequestFailure('Failed to delete the task.')
+
+    def _req_aps_natsort_files(self, cid, offset, limit, o='file_name',
+                               asc=1, aid=1, show_dir=1, code=None, scid=None,
+                               snap=0, natsort=1, source=None, type=0,
+                               format='json', star=None):
+        """
+        When :func:`API._req_files` is called with `o='filename'` and
+            `natsort=1`, API access will fail
+            and :func:`API._req_aps_natsort_files` is subsequently called with
+            the same kwargs. Refer to the implementation in
+            :func:`Directory.list`
+        """
+        params = locals()
+        print(params)
+        del params['self']
+        req = Request(method='GET', url=self.aps_natsort_url, params=params)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise RequestFailure('Failed to access files API.')
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=1, aid=1,
                    show_dir=1, code=None, scid=None, snap=0, natsort=1,
@@ -1028,7 +1050,8 @@ class Directory(BaseFile):
                 func=func, count=cur_count, page=page + 1,
                 entries=entries + loaded_entries, **kwargs)
 
-    def list(self, count=30, order='user_ptime', asc=False, show_dir=True):
+    def list(self, count=30, order='user_ptime', asc=False, show_dir=True,
+             natsort=True):
         """
         List directory contents
 
@@ -1037,6 +1060,7 @@ class Directory(BaseFile):
             may be one of `user_ptime` (default), `file_size` and `file_name`
         :param bool asc: whether in ascending order
         :param bool show_dir: whether to show directories
+        :param bool natsort: whether to use natural sort
 
         Return a list of :class:`.File` or :class:`.Directory` objects
         """
@@ -1047,13 +1071,22 @@ class Directory(BaseFile):
         kwargs['cid'] = self.cid
         kwargs['asc'] = 1 if asc is True else 0
         kwargs['show_dir'] = 1 if show_dir is True else 0
+        kwargs['natsort'] = 1 if natsort is True else 0
         kwargs['o'] = order
         if self.count <= count:
             # count should never be greater than self.count
             count = self.count
-        entries = self._load_entries(func=self.api._req_files,
-                                     count=count, page=1, **kwargs)
-
+        try:
+            entries = self._load_entries(func=self.api._req_files,
+                                         count=count, page=1, **kwargs)
+        # When natsort=1 and order='file_name', API access will fail
+        except RequestFailure as e:
+            if natsort is True and order == 'file_name':
+                entries = \
+                    self._load_entries(func=self.api._req_aps_natsort_files,
+                                       count=count, page=1, **kwargs)
+            else:
+                raise e
         res = []
         for entry in entries:
             if 'pid' in entry:
