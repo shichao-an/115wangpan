@@ -568,10 +568,11 @@ class API(object):
         else:
             raise RequestFailure('Failed to delete the task.')
 
-    def _req_files(self, cid, offset, limit, o='user_ptime', asc=0, aid=1,
-                   show_dir=1, code=None, scid=None, snap=0, natsort=None,
+    def _req_files(self, cid, offset, limit, o='user_ptime', asc=1, aid=1,
+                   show_dir=1, code=None, scid=None, snap=0, natsort=1,
                    source=None, type=0, format='json', star=None):
         params = locals()
+        print(params)
         del params['self']
         req = Request(method='GET', url=self.web_api_url, params=params)
         res = self.http.send(req)
@@ -1000,11 +1001,12 @@ class Directory(BaseFile):
         self.name = r['name']
         self._count = r['count']
 
-    def _load_entries(self, count, page=1, order='user_ptime',
-                      asc=0, show_dir=1, entries=None):
+    def _load_entries(self, func, count, page=1, entries=None, **kwargs):
         """
         Load entries
 
+        :param function func: function (:func:`API._req_files` or
+            :func:`API._req_search`) that returns entries
         :param int count: number of entries to load. This value should never
             be greater than self.count
         :param int page: page number (starting from 1)
@@ -1014,26 +1016,25 @@ class Directory(BaseFile):
             entries = []
         loaded_entries = [
             entry for entry in
-            self.api._req_files(cid=self.cid,
-                                offset=(page - 1) * self.max_entries_per_load,
-                                limit=self.max_entries_per_load,
-                                o=order, show_dir=show_dir,
-                                asc=asc)['data'][:count]
+            func(offset=(page - 1) * self.max_entries_per_load,
+                 limit=self.max_entries_per_load,
+                 **kwargs)['data'][:count]
         ]
         if count <= self.max_entries_per_load:
             return entries + loaded_entries
         else:
             cur_count = count - self.max_entries_per_load
             return self._load_entries(
-                count=cur_count, page=page + 1, order=order, asc=asc,
-                show_dir=show_dir, entries=entries + loaded_entries)
+                func=func, count=cur_count, page=page + 1,
+                entries=entries + loaded_entries, **kwargs)
 
     def list(self, count=30, order='user_ptime', asc=False, show_dir=True):
         """
         List directory contents
 
         :param int count: number of entries to be listed
-        :param str order: originally named `o`
+        :param str order: order of entries, originally named `o`. This value
+            may be one of `user_ptime` (default), `file_size` and `file_name`
         :param bool asc: whether in ascending order
         :param bool show_dir: whether to show directories
 
@@ -1041,13 +1042,18 @@ class Directory(BaseFile):
         """
         if self.cid is None:
             return False
-        asc = 1 if asc is True else 0
-        show_dir = 1 if show_dir else 0
+        kwargs = {}
+        # `cid` is the only required argument
+        kwargs['cid'] = self.cid
+        kwargs['asc'] = 1 if asc is True else 0
+        kwargs['show_dir'] = 1 if show_dir is True else 0
+        kwargs['o'] = order
         if self.count <= count:
             # count should never be greater than self.count
             count = self.count
-        entries = self._load_entries(count, page=1, order=order, asc=asc,
-                                     show_dir=show_dir)
+        entries = self._load_entries(func=self.api._req_files,
+                                     count=count, page=1, **kwargs)
+
         res = []
         for entry in entries:
             if 'pid' in entry:
