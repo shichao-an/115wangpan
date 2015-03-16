@@ -41,6 +41,12 @@ Then, you can install with pip:
 
     $ pip install 115wangpan
 
+Or, if you want to install the latest from GitHub:
+
+.. code-block:: bash
+
+    $ pip install git+https://github.com/shichao-an/115wangpan
+
 Usage
 -----
 .. code-block:: python
