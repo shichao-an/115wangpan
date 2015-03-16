@@ -69,12 +69,11 @@ Usage
     <Directory: 离线下载>
 
 
-Helpers
--------
+CLI commands 
+------------
 
-* `115wangpan-dl <https://gist.github.com/shichao-an/129969edca4fc1282296>`_: file download script
-* `115wangpan-up <https://gist.github.com/shichao-an/fa09286436d6f7118b97>`_: torrent upload script
-
+* 115down: simple downloading tool
+* 115up: simple task creation tool that support torrent and links
 
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
    :target: http://travis-ci.org/shichao-an/115wangpan
