@@ -194,6 +194,7 @@ class API(object):
         self._signatures = {}
         self._upload_url = None
         self._lixian_timestamp = None
+        self._root_directory = None
         self._downloads_directory = None
         self._torrents_directory = None
         self._task_count = None
@@ -304,6 +305,13 @@ class API(object):
         self.http.get(LOGOUT_URL)
         self._reset_cache()
         return True
+
+    @property
+    def root_directory(self):
+        """Root directory"""
+        if self._root_directory is None:
+            self._load_root_directory()
+        return self._root_directory
 
     @property
     def downloads_directory(self):
@@ -430,6 +438,28 @@ class API(object):
         download(obj.url, path=path, session=self.http.session,
                  show_progress=show_progress, resume=resume,
                  auto_retry=auto_retry)
+
+    def search(self, keyword, count=30):
+        """
+        Search files or directories
+
+        :param str keyword: keyword
+        :param int count: number of entries to be listed
+        """
+        kwargs = {}
+        kwargs['search_value'] = keyword
+        root = self.root_directory
+        entries = root._load_entries(func=self._req_files_search,
+                                     count=count, page=1, **kwargs)
+
+        res = []
+        for entry in entries:
+            print(entry)
+            if 'pid' in entry:
+                res.append(_instantiate_directory(self, entry))
+            else:
+                res.append(_instantiate_file(self, entry))
+        return res
 
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
@@ -609,9 +639,23 @@ class API(object):
             * 99: files only
         """
         params = locals()
-        #print(params)
         del params['self']
+        print(params)
         req = Request(method='GET', url=self.web_api_url, params=params)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise RequestFailure('Failed to access files API.')
+
+    def _req_files_search(self, offset, limit, search_value, aid=-1,
+                          date=None, pick_code=None, source=None, type=0,
+                          format='json'):
+        params = locals()
+        del params['self']
+        print(params)
+        url = self.web_api_url + '/search'
+        req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
         if res.state:
             return res.content
@@ -789,6 +833,13 @@ class API(object):
         kwargs = self._req_directory(cid)
         if str(kwargs['pid']) != str(cid):
             return Directory(api=self, **kwargs)
+
+    def _load_root_directory(self):
+        """
+        Load root directory, which has a cid of 0
+        """
+        kwargs = self._req_directory(0)
+        self._root_directory = Directory(api=self, **kwargs)
 
     def _load_torrents_directory(self):
         """
@@ -1044,7 +1095,7 @@ class Directory(BaseFile):
     max_entries_per_load = 24  # Smaller than 24 may cause abnormal result
 
     def __init__(self, api, cid, name, pid, count=-1,
-                 date_created=None, pickcode=None,
+                 date_created=None, pickcode=None, is_root=False,
                  *args, **kwargs):
         super(Directory, self).__init__(api, cid, name)
 
@@ -1054,6 +1105,11 @@ class Directory(BaseFile):
             self.date_created = date_created
         self.pickcode = pickcode
         self._parent = None
+
+    @property
+    def is_root(self):
+        """Whether this directory is the root directory"""
+        return int(self.cid) == 0
 
     @property
     def parent(self):
