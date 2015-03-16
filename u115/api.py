@@ -572,7 +572,7 @@ class API(object):
     def _req_aps_natsort_files(self, cid, offset, limit, o='file_name',
                                asc=1, aid=1, show_dir=1, code=None, scid=None,
                                snap=0, natsort=1, source=None, type=0,
-                               format='json', star=None):
+                               format='json', star=None, is_share=None):
         """
         When :func:`API._req_files` is called with `o='filename'` and
             `natsort=1`, API access will fail
@@ -592,11 +592,72 @@ class API(object):
 
     def _req_files(self, cid, offset, limit, o='user_ptime', asc=1, aid=1,
                    show_dir=1, code=None, scid=None, snap=0, natsort=1,
-                   source=None, type=0, format='json', star=None):
+                   source=None, type=0, format='json', star=None,
+                   is_share=None):
+        """
+        :param int type: type of files to be displayed
+
+            * '' (empty string): marked
+            * None: all
+            * 0: all
+            * 1: documents
+            * 2: images
+            * 3: music
+            * 4: video
+            * 5: zipped
+            * 6: applications
+            * 99: files only
+        """
         params = locals()
         #print(params)
         del params['self']
         req = Request(method='GET', url=self.web_api_url, params=params)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise RequestFailure('Failed to access files API.')
+
+    def _req_files_edit(self, fid, file_name=None, is_mark=0):
+        """Edit a file or directory"""
+        url = self.web_api_url + '/edit'
+        data = locals()
+        del data['self']
+        req = Request(method='POST', url=url, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise RequestFailure('Failed to access files API.')
+
+    def _req_files_add(self, pid, cname):
+        """
+        Add a directory
+        :param int pid: parent directory id
+        :param str cname: directory name
+        """
+        url = self.web_api_url + '/add'
+        data = locals()
+        del data['self']
+        req = Request(method='POST', url=url, data=data)
+        res = self.http.send(req)
+        if res.state:
+            return res.content
+        else:
+            raise RequestFailure('Failed to access files API.')
+
+    def _req_files_move(self, pid, fids):
+        """
+        Move files or directories
+        :param int pid: target directory id
+        :param list fids: a list of ids of files or directories to be moved
+        """
+        url = self.web_api_url + '/move'
+        data = {}
+        data['pid'] = pid
+        for i, fid in enumerate(fids):
+            data['fid[%d]' % i] = fid
+        req = Request(method='POST', url=url, data=data)
         res = self.http.send(req)
         if res.state:
             return res.content
