@@ -1153,12 +1153,17 @@ class Directory(BaseFile):
         """
         if entries is None:
             entries = []
-        loaded_entries = [
-            entry for entry in
+        res = \
             func(offset=(page - 1) * self.max_entries_per_load,
                  limit=self.max_entries_per_load,
-                 **kwargs)['data'][:count]
+                 **kwargs)
+        loaded_entries = [
+            entry for entry in res['data'][:count]
         ]
+        total_count = res['count']
+        # count should never be greater than total_count
+        if count > total_count:
+            count = total_count
         if count <= self.max_entries_per_load:
             return entries + loaded_entries
         else:
