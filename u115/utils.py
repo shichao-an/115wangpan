@@ -9,6 +9,7 @@ from requests.utils import unquote as _unquote
 
 PY3 = sys.version_info[0] == 3
 STREAM = sys.stderr
+STRPTIME_FORMATS = ['%Y-%m-%d %H:%M', '%Y-%m-%d']
 
 if PY3:
     bin_type = bytes
@@ -33,7 +34,14 @@ def get_utcdatetime(timestamp):
 
 
 def string_to_datetime(s):
-    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M")
+    for f in STRPTIME_FORMATS:
+        try:
+            return datetime.datetime.strptime(s, f)
+        except ValueError:
+            pass
+    msg = 'Time data %s does not match any formats in %s' \
+        % (s, STRPTIME_FORMATS)
+    raise ValueError(msg)
 
 
 def eval_path(path):
