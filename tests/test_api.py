@@ -124,6 +124,15 @@ class TestAPI(TestCase):
         except RequestFailure:
             pass
 
+    def test_search(self):
+        """Directory is assumed to have more than 50 mp3 files"""
+        s1 = self.api.search('mp3')
+        assert len(s1) == 30
+        s2 = self.api.search('mp3', 10)
+        assert len(s2) == 10
+        s3 = self.api.search('mp3', 45)
+        assert len(s3) == 45
+
 
 class TestPrivateAPI(TestCase):
     def __init__(self, *args, **kwargs):
