@@ -174,6 +174,7 @@ class API(object):
         self._signatures = {}
         self._upload_url = None
         self._lixian_timestamp = None
+        self._root_directory = None
         self._downloads_directory = None
         self._torrents_directory = None
         self._task_count = None
