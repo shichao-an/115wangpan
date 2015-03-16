@@ -454,7 +454,6 @@ class API(object):
 
         res = []
         for entry in entries:
-            print(entry)
             if 'pid' in entry:
                 res.append(_instantiate_directory(self, entry))
             else:
@@ -611,7 +610,6 @@ class API(object):
             :func:`Directory.list`
         """
         params = locals()
-        #print(params)
         del params['self']
         req = Request(method='GET', url=self.aps_natsort_url, params=params)
         res = self.http.send(req)
@@ -640,7 +638,6 @@ class API(object):
         """
         params = locals()
         del params['self']
-        print(params)
         req = Request(method='GET', url=self.web_api_url, params=params)
         res = self.http.send(req)
         if res.state:
@@ -653,7 +650,6 @@ class API(object):
                           format='json'):
         params = locals()
         del params['self']
-        print(params)
         url = self.web_api_url + '/search'
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
