@@ -996,7 +996,7 @@ class BaseFile(Base):
                 self._deleted = True
                 return True
         else:
-            return APIError('This file or directory is already deleted.')
+            raise APIError('This file or directory is already deleted.')
 
     @property
     def is_deleted(self):
@@ -1279,7 +1279,7 @@ class Task(Directory):
             if self.api._req_lixian_task_del(self):
                 self._deleted = True
                 return True
-        return APIError('This task is already deleted.')
+        raise APIError('This task is already deleted.')
 
     @property
     def is_deleted(self):
