@@ -376,8 +376,6 @@ class API(object):
 
     def add_task_url(self, target_url):
         """
-        Added a new URL task (VIP only)
-
         :param target_url URL: the URL of the file that to be downloaded
 
         """
