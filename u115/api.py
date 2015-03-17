@@ -376,7 +376,7 @@ class API(object):
 
     def add_task_url(self, target_url):
         """
-        :param target_url URL: the URL of the file that to be downloaded
+        :param str target_url: the URL of the file that to be downloaded
 
         """
         return self._req_lixian_add_task_url(target_url)
