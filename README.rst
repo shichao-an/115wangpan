@@ -3,31 +3,32 @@
 
 |Build| |PyPI version|
 
-115 Wangpan (115网盘) is an unofficial Python API for 115.com, mainly pertinent to its "lixian" (offline) features. Currently, only limited features have been implemented. Supported Python verisons are 2.6, 2.7 and 3.3.
+115 Wangpan (115网盘 or 115云) is an unofficial Python API for 115.com. Supported Python verisons are 2.6, 2.7 and 3.3.
 
 * Documentation: http://115wangpan.readthedocs.org
 * GitHub: https://github.com/shichao-an/115wangpan
 * PyPI: https://pypi.python.org/pypi/115wangpan/
 
-
 Features
 --------
 
 * Authentication
-* Tasks management (BitTorrent currently supported)
-* File management
+* Persistent session
+* Tasks management: BitTorrent and links
+* Files management: uploading, downloading and searching
 
 Installation
 ------------
-Install dependencies before installing the python package:
 
-Ubuntu
+`libcurl <http://curl.haxx.se/libcurl/>`_ is required. Install dependencies before installing the python package:
+
+Ubuntu:
 
 .. code-block:: bash
 
     $ sudo apt-get install libcurl4-openssl-dev python-dev
 
-Fedora
+Fedora:
 
 .. code-block:: bash
 
@@ -49,6 +50,7 @@ Or, if you want to install the latest from GitHub:
 
 Usage
 -----
+
 .. code-block:: python
 
     >>> import u115
@@ -78,8 +80,8 @@ Usage
 CLI commands 
 ------------
 
-* 115down: simple downloading tool
-* 115up: simple task creation tool that support torrent and links
+* 115down: for downloading files
+* 115up: for creating tasks from torrents and links
 
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
    :target: http://travis-ci.org/shichao-an/115wangpan
