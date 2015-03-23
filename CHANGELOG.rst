@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.4.0 (2015-03-23)
+------------------
+
+- Added persistent session (cookies) feature
+- Added search API
+- Added CLI commands: 115down and 115up
+- Fixed #10
+
 0.3.1 (2015-02-03)
 ------------------
 
