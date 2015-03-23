@@ -41,12 +41,19 @@ class TestAPI(TestCase):
         assert 'used' in res
 
     def test_tasks_directories(self):
-        time.sleep(5)
+        time.sleep(5)  # Avoid 'Task is being transferred'
         task_count = self.api.task_count
         tasks = self.api.get_tasks(LARGE_COUNT)
         self.assertEqual(len(tasks), task_count)
         tasks = self.api.get_tasks(SMALL_COUNT)
         self.assertEqual(len(tasks), SMALL_COUNT)
+        t = None
+        for tt in tasks:
+            if isinstance(tt, Directory):
+                t = tt
+                break
+        else:
+            return
         t = tasks[0]
         dd = self.api.downloads_directory
         if t.status_human == 'TRANSFERRED':
@@ -79,7 +86,7 @@ class TestAPI(TestCase):
                 except TaskError:
                     return
                 d1_count = d1.count
-                d2 = d1.list()[1]
+                d2 = d1.list()[0]
                 d2_count = d2.count
                 files = d2.list()
                 f1 = files[0]
@@ -112,26 +119,20 @@ class TestAPI(TestCase):
         assert u.submit()
 
     def test_add_task_url(self):
-        '''
-        NOT FINISHED YET!
-        TODO:
-            * Check the target_url is not in the task list already.
-            * add the target_url
-            * checked it added successfully
-        '''
         try:
             self.api.add_task_url(TEST_TARGET_URL)
         except RequestFailure:
             pass
 
     def test_search(self):
-        """Directory is assumed to have more than 50 mp3 files"""
-        s1 = self.api.search('mp3')
+        """Directory is assumed to have more than 40 torrent files"""
+        keyword = 'torrent'
+        s1 = self.api.search(keyword)
         assert len(s1) == 30
-        s2 = self.api.search('mp3', 10)
+        s2 = self.api.search(keyword, 10)
         assert len(s2) == 10
-        s3 = self.api.search('mp3', 45)
-        assert len(s3) == 45
+        s3 = self.api.search(keyword, 40)
+        assert len(s3) == 40
 
 
 class TestPrivateAPI(TestCase):
