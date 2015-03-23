@@ -376,9 +376,7 @@ class API(object):
 
     def add_task_url(self, target_url):
         """
-        Added a new URL task (VIP only)
-
-        :param target_url URL: the URL of the file that to be downloaded
+        :param str target_url: the URL of the file that to be downloaded
 
         """
         return self._req_lixian_add_task_url(target_url)
@@ -996,7 +994,7 @@ class BaseFile(Base):
                 self._deleted = True
                 return True
         else:
-            return APIError('This file or directory is already deleted.')
+            raise APIError('This file or directory is already deleted.')
 
     @property
     def is_deleted(self):
@@ -1279,7 +1277,7 @@ class Task(Directory):
             if self.api._req_lixian_task_del(self):
                 self._deleted = True
                 return True
-        return APIError('This task is already deleted.')
+        raise APIError('This task is already deleted.')
 
     @property
     def is_deleted(self):
