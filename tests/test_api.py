@@ -2,7 +2,7 @@
 import time
 import os
 from unittest import TestCase
-from u115.api import API, Torrent, Directory, File, TaskError, RequestFailure
+from u115.api import API, Torrent, Directory, File, TaskError
 from u115.utils import pjoin
 from u115 import conf
 
@@ -21,7 +21,10 @@ TEST_TORRENT2 = {
     'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
 }
 
-TEST_TARGET_URL = 'http://download.thinkbroadband.com/1MB.zip'
+TEST_TARGET_URL = {
+    'url': 'http://download.thinkbroadband.com/1MB.zip',
+    'info_hash': '5468537b4e05bd8f69bfe17e59e7ad85115',
+}
 TEST_COOKIE_FILE = pjoin(DATA_DIR, '115cookies')
 
 
@@ -119,10 +122,11 @@ class TestAPI(TestCase):
         assert u.submit()
 
     def test_add_task_url(self):
-        try:
-            self.api.add_task_url(TEST_TARGET_URL)
-        except RequestFailure:
-            pass
+        tasks = self.api.get_tasks()
+        for t in tasks:
+            if t.info_hash == TEST_TARGET_URL['info_hash']:
+                t.delete()
+        assert self.api.add_task_url(TEST_TARGET_URL['url'])
 
     def test_search(self):
         """Directory is assumed to have more than 40 torrent files"""
