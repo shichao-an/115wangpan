@@ -27,6 +27,17 @@ Request and response
    :members:
    :undoc-members:
 
+Cookies
+-------
+
+.. autoclass:: u115.RequestsLWPCookieJar
+   :members:
+   :undoc-members:
+
+.. autoclass:: u115.RequestsMozillaCookieJar
+   :members:
+   :undoc-members:
+
 Authentication
 --------------
 
@@ -80,6 +91,10 @@ Exceptions
    :undoc-members:
 
 .. autoclass:: u115.RequestFailure
+   :members:
+   :undoc-members:
+
+.. autoclass:: u115.JobError
    :members:
    :undoc-members:
 
