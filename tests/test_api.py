@@ -1,37 +1,59 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+import sys
 import time
 from unittest import TestCase
 from u115.api import API, Torrent, Directory, File, TaskError
 from u115.utils import pjoin
 from u115 import conf
 
+PY3 = sys.version_info[0] == 3
+if PY3:
+    from unittest.mock import Mock
+else:
+    from mock import Mock
+
 
 LARGE_COUNT = 999
 SMALL_COUNT = 2
 TEST_DIR = pjoin(conf.PROJECT_PATH, 'tests')
 DATA_DIR = pjoin(TEST_DIR, 'data')
+
+# This torrent's directory contains a single file
 TEST_TORRENT1 = {
     'filename': pjoin(DATA_DIR, u'SAOII_10.torrent'),
     'info_hash': '6bcc605d8fd8629b4df92202d554e5812e78df25',
 }
+
+# This torrent's directory contains files and directories
+# - BK/
+#   - (11 files)
+# - MP3/
+#   - Disc_1/
+#     - (23 files)
+#   - Disc_2/
+#     - (19 files)
+# - Cover.jpg
 
 TEST_TORRENT2 = {
     'filename': pjoin(DATA_DIR, u'Rozen_Maiden_OST.torrent'),
     'info_hash': 'd1fc55cc7547881884d01c56ffedd92d39d48847',
 }
 
+# This HTTP url has no associated directory
 TEST_TARGET_URL1 = {
     'url': 'http://download.thinkbroadband.com/1MB.zip',
     'info_hash': '5468537b4e05bd8f69bfe17e59e7ad85115',
 }
 
+# This Magnet url has an associated directory
 TEST_TARGET_URL2 = {
     'url': open(pjoin(DATA_DIR, 'magnet.txt')).read().strip(),
     'info_hash': '1f9f293e5e4ef63eba76d3485fe54577737df0e8',
 }
 TEST_COOKIE_FILE = pjoin(DATA_DIR, '115cookies')
+TASK_TRANSFERRED_TIMEOUT = 60
 
 
 def is_task_created(tasks, info_hash):
@@ -47,6 +69,23 @@ def is_task_created(tasks, info_hash):
             return True
     else:
         return False
+
+
+def wait_task_transferred(task):
+    """
+    Wait until a 'BEING TRANSFERRED' task transferred
+    """
+    seconds = 0
+    if (task.status_human != 'TRANSFERRED' or
+            task.status_human == 'BEING TRANSFERRED'):
+        raise Exception('Task cannot be transferred.')
+    while (task.status_human == 'BEING TRANSFERRED' and
+           seconds < TASK_TRANSFERRED_TIMEOUT):
+        time.sleep(5)
+        seconds += 5
+    if (seconds == TASK_TRANSFERRED_TIMEOUT and
+            task.status_human != 'TRANSFERRED'):
+        raise Exception('Task transferred timeout.')
 
 
 class TaskTests(TestCase):
@@ -192,6 +231,69 @@ class URLTaskTests(TestCase):
         tasks = self.api.get_tasks()
         for task in tasks:
             task.delete()
+
+
+class DownloadsDirectoryTests(TestCase):
+    """
+    Test tasks and files within the downloads directory
+    """
+    def setUp(self):
+        # Initialize a new API instance
+        self.api = API()
+        self.api.login(section='test')
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        for entry in entries:
+            entry.delete()
+
+    def test_transferred_task_directories(self):
+        """
+        Test the task with an associated directory
+        """
+        filename = TEST_TORRENT2['filename']
+        info_hash = TEST_TORRENT2['info_hash']
+        assert self.api.add_task_bt(filename)
+        tasks = self.api.get_tasks()
+        # Get the target task as `task`
+        task = None
+        for _task in tasks:
+            if _task.info_hash == info_hash:
+                task = _task
+                break
+        assert task
+        # Wait until the task is transferred
+        #wait_task_transferred(task)
+        assert task.status_human == 'TRANSFERRED'
+        task_directory = task.directory
+        entries = task_directory.list()
+        dirs = []
+        files = []
+        for entry in entries:
+            if isinstance(entry, File):
+                files.append(entry)
+            elif isinstance(entry, Directory):
+                dirs.append(entry)
+        assert len(dirs) == 2
+        assert len(files) == 1
+        for directory in dirs:
+            if directory.name == 'BK':
+                assert directory.count == 11
+                assert len(directory.list()) == 11
+            if directory.name == 'MP3':
+                assert directory.count == 2
+                assert len(directory.list()) == 2
+
+    def tearDown(self):
+        # Clean up all tasks
+        tasks = self.api.get_tasks()
+        for task in tasks:
+            task.delete()
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        for entry in entries:
+            entry.delete()
 
 
 class TestAPI(TestCase):
