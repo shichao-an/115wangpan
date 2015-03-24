@@ -1271,13 +1271,13 @@ class Task(Directory):
         Delete task (does not influence its corresponding directory)
 
         :return: whether deletion is successful
-        :raise: :class:`.APIError` if the task is already deleted
+        :raise: :class:`.TaskError` if the task is already deleted
         """
         if not self._deleted:
             if self.api._req_lixian_task_del(self):
                 self._deleted = True
                 return True
-        raise APIError('This task is already deleted.')
+        raise TaskError('This task is already deleted.')
 
     @property
     def is_deleted(self):
