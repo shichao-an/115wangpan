@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.4.1 (2015-04-03)
+------------------
+
+- 115down: added range support for argument ``sub_num`` (#14)
+- 115down: added size display for file and task entries
+
 0.4.0 (2015-03-23)
 ------------------
 
