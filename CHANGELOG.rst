@@ -67,6 +67,3 @@ Changelog
 ------------------
 
 - Initial release.
-
-.. toctree::
-   :titlesonly:
