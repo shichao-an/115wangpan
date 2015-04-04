@@ -18,8 +18,7 @@ if os.environ.get('PROXY_ADDR'):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(usage='%(prog)s [options]',
-                                     prog='115up')
+    parser = argparse.ArgumentParser(prog='115up')
     group1 = parser.add_mutually_exclusive_group(required=True)
     group1.add_argument('-l', '--link',
                         help="link resource (HTTP, FTP, eD2k or Magnet)")
