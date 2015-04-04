@@ -3,8 +3,9 @@
 from __future__ import print_function
 import argparse
 import getpass
+import re
 import os
-from u115 import API, File, Directory
+from u115 import API, File, Directory, Task
 
 # SOCKS proxy
 if os.environ.get('PROXY_ADDR'):
@@ -18,15 +19,16 @@ DRY_RUN = False
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(prog='115dl')
+    parser = argparse.ArgumentParser(prog='115down')
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-u', '--username', help='account or username')
     group.add_argument('-d', '--section', default='default',
                        help='section name in credential file')
     parser.add_argument('entry_num', nargs='?', help='entry number',
                         type=int)
-    parser.add_argument('sub_num', nargs='?',
-                        help='sub-entry number or star (*) for all')
+    parser.add_argument(
+        'sub_num', nargs='?',
+        help='sub-entry number(s) or range (e.g. 1,2,4-6); star (*) for all')
     parser.add_argument('-t', '--tasks', action='store_true',
                         help="list tasks")
     parser.add_argument('-l', '--list', action='store_true', default=True,
@@ -34,7 +36,8 @@ def parse_args():
     parser.add_argument('-n', '--count', default=30, type=int,
                         help="number of entries to get")
     parser.add_argument('-m', '--sub-count', default=30, type=int,
-                        dest='sub_count', help="number of sub-entries to get")
+                        dest='sub_count',
+                        help="number of sub-entries to get (0 for all)")
     parser.add_argument('-s', '--dry-run', action='store_true',
                         help="print urls instead of downloading")
     args = parser.parse_args()
@@ -45,16 +48,7 @@ def parse_args():
             msg = 'Entry number must be a positive integer.'
             raise parser.error(msg)
     if args.sub_num is not None:
-        msg = 'Sub-entry number must be a positive integer or star (*).'
-        if args.sub_num.isdigit():
-            try:
-                args.sub_num = int(args.sub_num)
-                assert args.sub_num > 0
-            except:
-                raise parser.error(msg)
-        else:
-            if args.sub_num != '*':
-                raise parser.error(msg)
+        args.sub_num = parse_sub_num(args.sub_num, parser)
     return args
 
 
@@ -69,10 +63,9 @@ def get_entries(username, password, section, entry_num, sub_num,
     if entry_num is None:
         for k, entry in enumerate(entries, start=1):
             if list_tasks:
-                status = '[%s]' % entry.status_human
-                print(k, status, repr(entry))
+                print_entry(entry, num=k)
             else:
-                print(k, repr(entry))
+                print_entry(entry, num=k)
     elif entry_num is not None and sub_num is None:
         entry = entries[entry_num - 1]
         # entry may be a File object
@@ -80,25 +73,61 @@ def get_entries(username, password, section, entry_num, sub_num,
             download_file(entry)
         else:
             # Directory object
+            if sub_count == 0:
+                sub_count = entry.count
             list_entry(entry, sub_count)
     elif entry_num is not None and sub_num is not None:
         entry = entries[entry_num - 1]
         print(repr(entry))
+        # entry may be a File object
+        if isinstance(entry, File):
+            download_file(entry)
+            return
+        # Directory object
+        if sub_count == 0:
+            sub_count = entry.count
         subs = entry.list(sub_count)
         if sub_num == '*':
-            for f in subs:
-                print(repr(f))
+            for k, f in enumerate(subs, start=1):
+                print_entry(f, num=k)
                 download_file(f)
         else:
-            f = subs[sub_num - 1]
-            print(repr(f))
-            download_file(f)
+            # sub_num is a set of integers
+            nums = sub_num
+            for num in nums:
+                f = subs[num - 1]
+                print_entry(f, num=num)
+                download_file(f)
+
+
+def print_entry(entry, prefix=None, num=None):
+    size_human = None
+    status_human = None
+    if isinstance(entry, File):
+        size_human = entry.size_human
+    elif isinstance(entry, Task):
+        size_human = entry.size_human
+        status_human = entry.status_human
+    args = []
+    if prefix is not None:
+        args.append(prefix)
+    if num is not None:
+        args.append(num)
+    if status_human is not None:
+        args.append('[%s]' % status_human)
+    if size_human is not None:
+        args.append('[%s]' % size_human)
+    args.append(repr(entry))
+    print(*args)
 
 
 def list_entry(entry, sub_count):
-    print(repr(entry))
+    """List a directory"""
+    actual_count = entry.count if sub_count > entry.count else sub_count
+    stat = '(%d out of %d)' % (actual_count, entry.count)
+    print(repr(entry), stat)
     for k, f in enumerate(entry.list(sub_count), start=1):
-        print('\t', k, repr(f))
+        print_entry(f, prefix='\t', num=k)
 
 
 def download_file(f):
@@ -113,6 +142,44 @@ def download_file(f):
             print(ff.url)
             if not DRY_RUN:
                 ff.download()
+
+
+def parse_sub_num(s, parser):
+    """
+    Parse sub_num
+    Return a string '*' or a set of integers
+    """
+    s = s.strip()
+    if s == '*':
+        return s
+    nums = s.split(',')
+    msg = 'Invalid sub-entry number.'
+    res = set()
+    for num in nums:
+        num = num.strip()
+        if num.isdigit():
+            try:
+                num = int(num)
+                assert num > 0
+                res.add(num)
+            except:
+                raise parser.error(msg)
+        else:
+            try:
+                m = re.search('(\d+)-(\d+)', num)
+                if m is None:
+                    raise parser.error(msg)
+                else:
+                    a = int(m.group(1))
+                    b = int(m.group(2))
+                    assert a > 0
+                    assert b > 0
+                    assert a <= b
+                    r = range(a, b + 1)
+                    res.update(r)
+            except:
+                raise parser.error(msg)
+    return res
 
 
 def main():
