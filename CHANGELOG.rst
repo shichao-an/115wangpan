@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.4.2 (2015-04-03)
+------------------
+
+- Fixed broken upload due to source page change (``_parse_src_js_var``)
+
 0.4.1 (2015-04-03)
 ------------------
 

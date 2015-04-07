@@ -872,7 +872,7 @@ class API(object):
         soup = BeautifulSoup(r.content)
         scripts = [script.text for script in soup.find_all('script')]
         text = '\n'.join(scripts)
-        pattern = "%s = (.*);" % (variable.upper())
+        pattern = "%s\s*=\s*(.*);" % (variable.upper())
         m = re.search(pattern, text)
         if not m:
             msg = 'Cannot parse source JavaScript for %s.' % variable
