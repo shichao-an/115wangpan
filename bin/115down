@@ -131,6 +131,7 @@ def list_entry(entry, sub_count):
 
 
 def download_file(f):
+    """Download an entry recursively"""
     if isinstance(f, File):
         print(f.url)
         if not DRY_RUN:
@@ -139,9 +140,7 @@ def download_file(f):
         ffiles = f.list()
         for ff in ffiles:
             print(ff)
-            print(ff.url)
-            if not DRY_RUN:
-                ff.download()
+            download_file(ff)
 
 
 def parse_sub_num(s, parser):
