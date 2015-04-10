@@ -70,7 +70,7 @@ class RequestHandler(object):
         Send a formatted API request
 
         :param request: a formatted request object
-        :type request: :class:`Request`
+        :type request: :class:`.Request`
         """
         r = self.session.request(method=request.method,
                                  url=request.url,
@@ -212,7 +212,7 @@ class API(object):
         self.cookies = cookies_class(f)
 
     def load_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Load cookies from the file :attribute:`API.cookies_filename`"""
+        """Load cookies from the file :attr:`.API.cookies_filename`"""
         self._init_cookies()
         if os.path.exists(self.cookies.filename):
             self.cookies.load(ignore_discard=ignore_discard,
@@ -220,7 +220,7 @@ class API(object):
             self._reset_cache()
 
     def save_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Save cookies to the file :attribute:`API.cookies_filename`"""
+        """Save cookies to the file :attr:`.API.cookies_filename`"""
         if not isinstance(self.cookies, cookielib.FileCookieJar):
             m = 'Cookies must be a cookielib.FileCookieJar object to be saved.'
             raise APIError(m)
@@ -384,7 +384,7 @@ class API(object):
 
             * True: it returns the opened torrent (:class:`.Torrent`) and
                 can then iterate files in :attr:`.Torrent.files` and
-                select/unselect them before calling :func:`Torrent.submit`
+                select/unselect them before calling :meth:`.Torrent.submit`
             * False: it will submit the torrent with default selected files
 
         """
@@ -625,11 +625,11 @@ class API(object):
                                snap=0, natsort=1, source=None, type=0,
                                format='json', star=None, is_share=None):
         """
-        When :func:`API._req_files` is called with `o='filename'` and
+        When :meth:`.API._req_files` is called with `o='filename'` and
             `natsort=1`, API access will fail
-            and :func:`API._req_aps_natsort_files` is subsequently called with
+            and :meth:`.API._req_aps_natsort_files` is subsequently called with
             the same kwargs. Refer to the implementation in
-            :func:`Directory.list`
+            :meth:`.Directory.list`
         """
         params = locals()
         del params['self']
@@ -1078,7 +1078,7 @@ class File(BaseFile):
 
     @property
     def url(self):
-        """Alias for :method:`File.get_download_url`"""
+        """Alias for :meth:`.File.get_download_url`"""
         return self.get_download_url()
 
     def download(self, path=None, show_progress=True, resume=True,
@@ -1164,8 +1164,8 @@ class Directory(BaseFile):
         """
         Load entries
 
-        :param function func: function (:func:`API._req_files` or
-            :func:`API._req_search`) that returns entries
+        :param function func: function (:meth:`.API._req_files` or
+            :meth:`.API._req_search`) that returns entries
         :param int count: number of entries to load. This value should never
             be greater than self.count
         :param int page: page number (starting from 1)
@@ -1458,7 +1458,7 @@ class Torrent(Base):
 
     @property
     def unselected_files(self):
-        """List of unselected :class:`TorrentFile` objects of this torrent"""
+        """List of unselected :class:`.TorrentFile` objects of this torrent"""
         return [f for f in self.files if not f.selected]
 
     def __unicode__(self):
