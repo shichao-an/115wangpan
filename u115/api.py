@@ -143,6 +143,8 @@ class API(object):
     :ivar http: :class:`.RequestHandler` object associated with this
         interface
     :cvar int num_tasks_per_page: default number of tasks per page/request
+    :cvar str web_api_url: files API url
+    :cvar str aps_natsort_url: natural sort files API url
     """
 
     num_tasks_per_page = 30
@@ -208,7 +210,7 @@ class API(object):
         self.cookies = cookies_class(f)
 
     def load_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Load cookies from the file"""
+        """Load cookies from the file `API.cookies_filename`"""
         self._init_cookies()
         if os.path.exists(self.cookies.filename):
             self.cookies.load(ignore_discard=ignore_discard,
@@ -216,7 +218,7 @@ class API(object):
             self._reset_cache()
 
     def save_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Save cookies to the file"""
+        """Save cookies to the file `API.cookies_filename`"""
         if not isinstance(self.cookies, cookielib.FileCookieJar):
             m = 'Cookies must be a cookielib.FileCookieJar object to be saved.'
             raise APIError(m)
@@ -230,7 +232,9 @@ class API(object):
 
     @cookies.setter
     def cookies(self, cookies):
-        """Cookies setter shortcut"""
+        """
+        Cookies of the current API session (cookies setter shortcut)
+        """
         self.http.session.cookies = cookies
 
     def login(self, username=None, password=None,
@@ -271,10 +275,19 @@ class API(object):
             raise AuthenticationError(msg)
 
     def get_user_info(self):
+        """
+        Get user info
+        :return: a dictionary of user information
+        :rtype: dict
+
+        """
         return self._req_get_user_aq()
 
     @property
     def user_id(self):
+        """
+        User id of the current API user
+        """
         if self._user_id is None:
             if self.has_logged_in:
                 self._user_id = self._req_get_user_aq()['data']['uid']
@@ -284,6 +297,9 @@ class API(object):
 
     @property
     def username(self):
+        """
+        Username of the current API user
+        """
         if self._username is None:
             if self.has_logged_in:
                 self._username = self._get_username()

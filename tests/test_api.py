@@ -263,6 +263,8 @@ class DownloadsDirectoryTests(TestCase):
                 break
         assert task
         # Wait until the task is transferred
+        # Task.reload() must be implemented before wait_task_transferred()
+        # can be used here
         #wait_task_transferred(task)
         assert task.status_human == 'TRANSFERRED'
         task_directory = task.directory
