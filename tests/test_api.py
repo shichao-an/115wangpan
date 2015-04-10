@@ -246,6 +246,8 @@ class DownloadsDirectoryTests(TestCase):
         entries = downloads_directory.list()
         for entry in entries:
             entry.delete()
+            # Avoid JobError
+            time.sleep(2)
 
     def test_transferred_task_directories(self):
         """
@@ -296,96 +298,137 @@ class DownloadsDirectoryTests(TestCase):
         entries = downloads_directory.list()
         for entry in entries:
             entry.delete()
+            # Avoid JobError
+            time.sleep(2)
 
 
-class TestAPI(TestCase):
-    def __init__(self, *args, **kwargs):
-        super(TestAPI, self).__init__(*args, **kwargs)
+class SearchTests(TestCase):
+    def setUp(self):
+        # Initialize a new API instance
+        self.api = API()
+        self.api.login(section='test')
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        for entry in entries:
+            entry.delete()
+            # Avoid JobError
+            time.sleep(2)
+        # Create a task that is transferred
+        filename = TEST_TORRENT2['filename']
+        assert self.api.add_task_bt(filename)
+
+    def test_search(self):
+        keyword1 = '.jpg'
+        count1 = 12
+        result1 = self.api.search(keyword1)
+        assert len(result1) == count1
+
+        keyword2 = 'IMG_0004.jpg'
+        count2 = 1
+        result2 = self.api.search(keyword2)
+        assert len(result2) == count2
+
+        keyword3 = 'nothing'
+        count3 = 0
+        result3 = self.api.search(keyword3)
+        assert len(result3) == count3
+
+    def tearDown(self):
+        # Clean up all tasks
+        tasks = self.api.get_tasks()
+        for task in tasks:
+            task.delete()
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        for entry in entries:
+            entry.delete()
+            # Avoid JobError
+            time.sleep(2)
+
+
+class AuthTests(TestCase):
+    """
+    Test login and logout
+    """
+    def setUp(self):
+        # Initialize a new API instance
         self.api = API()
         self.api.login(section='test')
 
-    def test_storage_info(self):
-        res = self.api.get_storage_info()
-        assert 'total' in res
-        assert 'used' in res
+    def test_login(self):
+        assert self.api.login(section='test')
 
-        res = self.api.get_storage_info(human=True)
-        assert 'total' in res
-        assert 'used' in res
-
-    def test_tasks_directories(self):
-        time.sleep(5)  # Avoid 'Task is being transferred'
-        task_count = self.api.task_count
-        tasks = self.api.get_tasks(LARGE_COUNT)
-        self.assertEqual(len(tasks), task_count)
-        tasks = self.api.get_tasks(SMALL_COUNT)
-        self.assertEqual(len(tasks), SMALL_COUNT)
-        t = None
-        for tt in tasks:
-            if isinstance(tt, Directory):
-                t = tt
-                break
-        else:
-            return
-        t = tasks[0]
-        dd = self.api.downloads_directory
-        if t.status_human == 'TRANSFERRED':
-            d = t.directory
-            p = t.parent
-            assert d.parent is p
-            assert p.cid == dd.cid
-            assert t.count == len(t.list(LARGE_COUNT))
-        for t in tasks:
-            if t.info_hash == TEST_TORRENT2['info_hash']:
-                td = t.directory
-                entries = td.list()
-                for entry in entries:
-                    if isinstance(entry, Directory):
-                        entry.list()
-                    elif isinstance(entry, File):
-                        assert entry.url
-
-    def test_delete_file(self):
-        tasks = self.api.get_tasks()
-        for t in tasks:
-            if t.info_hash == TEST_TORRENT2['info_hash']:
-                # Delete file
-                try:
-                    d1 = t.directory
-                except TaskError:
-                    time.sleep(20)
-                try:
-                    d1 = t.directory
-                except TaskError:
-                    return
-                d1_count = d1.count
-                d2 = d1.list()[0]
-                d2_count = d2.count
-                files = d2.list()
-                f1 = files[0]
-                assert f1.delete()
-                d2.reload()
-                assert d2.count == d2_count - 1
-                # Sleep to avoid JobError
-                time.sleep(2)
-                assert d2.delete()
-                d1.reload()
-                assert d1.count == d1_count - 1
-
-    def test_search(self):
-        """Directory is assumed to have more than 40 torrent files"""
-        keyword = 'torrent'
-        s1 = self.api.search(keyword)
-        assert len(s1) == 30
-        s2 = self.api.search(keyword, 10)
-        assert len(s2) == 10
-        s3 = self.api.search(keyword, 40)
-        assert len(s3) == 40
+    def test_logout(self):
+        assert self.api.logout()
+        assert not self.api.has_logged_in
 
 
-class TestPrivateAPI(TestCase):
+class PublicAPITests(TestCase):
+    """Test public methods"""
     def __init__(self, *args, **kwargs):
-        super(TestPrivateAPI, self).__init__(*args, **kwargs)
+        """Initialize once for all test functions in this TestCase"""
+        super(PublicAPITests, self).__init__(*args, **kwargs)
+        self.api = API()
+        self.api.login(section='test')
+
+    def test_get_storage_info(self):
+        storage_info = self.api.get_storage_info()
+        assert 'total' in storage_info
+        assert 'used' in storage_info
+
+    def test_task_count(self):
+        task_count = self.api.task_count
+        assert isinstance(task_count, int)
+        assert task_count >= 0
+
+    def test_task_quota(self):
+        task_quota = self.api.task_quota
+        assert isinstance(task_quota, int)
+
+    def test_get_user_info(self):
+        user_info = self.api.get_user_info()
+        assert isinstance(user_info, dict)
+
+    def test_user_id(self):
+        user_id = self.api.user_id
+        assert int(user_id)
+
+    def test_username(self):
+        username = self.api.username
+        assert isinstance(username, str)
+
+
+class CookiesTests(TestCase):
+    """
+    Test cookies
+    """
+    def setUp(self):
+        if os.path.exists(TEST_COOKIE_FILE):
+            os.remove(TEST_COOKIE_FILE)
+        self.api = API(auto_logout=False, persistent=True,
+                       cookies_filename=TEST_COOKIE_FILE)
+        self.api.login(section='test')
+
+    def test_cookies(self):
+        self.api.__del__()
+        self.api = API(auto_logout=False, persistent=True,
+                       cookies_filename=TEST_COOKIE_FILE)
+        assert self.api.has_logged_in
+
+    def tearDown(self):
+        if os.path.exists(TEST_COOKIE_FILE):
+            os.remove(TEST_COOKIE_FILE)
+
+
+class PrivateAPITests(TestCase):
+    """
+    Test private methods
+    TODO: add more private methods for tests
+    """
+    def __init__(self, *args, **kwargs):
+        super(PrivateAPITests, self).__init__(*args, **kwargs)
         self.api = API()
         self.api.login(section='test')
 
@@ -400,18 +443,3 @@ class TestPrivateAPI(TestCase):
     def test_load_upload_url(self):
         url = self.api._load_upload_url()
         assert url
-
-
-class TestCookies(TestCase):
-    def setUp(self):
-        if os.path.exists(TEST_COOKIE_FILE):
-            os.remove(TEST_COOKIE_FILE)
-        self.api = API(auto_logout=False, persistent=True,
-                       cookies_filename=TEST_COOKIE_FILE)
-        self.api.login(section='test')
-
-    def test_cookies(self):
-        self.api.__del__()
-        self.api = API(auto_logout=False, persistent=True,
-                       cookies_filename=TEST_COOKIE_FILE)
-        assert self.api.has_logged_in
