@@ -972,9 +972,11 @@ class BaseFile(Base):
     def __init__(self, api, cid, name):
         """
         :param API api: associated API object
-        :param int cid: integer
-            for file: this represents the directory it belongs to;
-            for directory: this represents itself
+        :param str cid: directory id
+
+            * For file: this represents the directory it belongs to;
+            * For directory: this represents itself
+
         :param str name: originally named `n`
 
         NOTICE
@@ -1026,7 +1028,7 @@ class File(BaseFile):
     File in a directory
 
     :ivar int fid: file id
-    :ivar int cid: cid of the current directory
+    :ivar str cid: cid of the current directory
     :ivar int size: size in bytes
     :ivar str size_human: human-readable size
     :ivar str file_type: originally named `ico`
@@ -1095,7 +1097,7 @@ class File(BaseFile):
 
 class Directory(BaseFile):
     """
-    :ivar int cid: cid of this directory
+    :ivar str cid: cid of this directory
     :ivar int pid: represents the parent directory it belongs to
     :ivar int count: number of entries in this directory
     :ivar datetime.datetime date_created: integer, originally named `t`
@@ -1229,11 +1231,21 @@ class Directory(BaseFile):
         return res
 
 
-class Task(Directory):
+class Task(Base):
     """
     BitTorrent or URL task
 
     :ivar datetime.datetime add_time: added time
+    :ivar str cid: associated directory id, if any:
+
+        * For a directory task (e.g. BT task): this is its associated
+            directory's cid
+        * For a file task (e.g. HTTP url task): this is the cid of the
+            downloads directory
+
+        This value may be None if the task is failed and has no corresponding
+        directory
+
     :ivar str file_id: equivalent to `cid` of :class:`.Directory`. This value
         may be None if the task is failed and has no corresponding directory
     :ivar str info_hash: hashed value
@@ -1264,8 +1276,9 @@ class Task(Directory):
     def __init__(self, api, add_time, file_id, info_hash, last_update,
                  left_time, move, name, peers, percent_done, rate_download,
                  size, status, cid, pid):
-        super(Task, self).__init__(api, cid, name, pid)
-
+        self.api = api
+        self.cid = cid
+        self.name = name
         self.add_time = add_time
         self.file_id = file_id
         self.info_hash = info_hash
@@ -1282,6 +1295,19 @@ class Task(Directory):
         self._deleted = False
         self._count = -1
 
+    @property
+    def is_directory(self):
+        """
+        :return: whether this task is associated with a directory
+        :rtype: bool
+        """
+        return self.api.downloads_directory.cid != self.cid
+
+    @property
+    def is_bt(self):
+        """Alias of `is_directory`"""
+        return self.is_directory
+
     def delete(self):
         """
         Delete task (does not influence its corresponding directory)
@@ -1297,6 +1323,10 @@ class Task(Directory):
 
     @property
     def is_deleted(self):
+        """
+        :return: whether this task is deleted
+        :rtype: bool
+        """
         return self._deleted
 
     @property
@@ -1348,29 +1378,33 @@ class Task(Directory):
 
     @property
     def directory(self):
-        """Corresponding directory to this task"""
+        """Associated directory, if any, with this task"""
+        if not self.is_directory:
+            msg = 'This task is a file task with no associated directory.'
+            raise TaskError(msg)
         if self._directory is None:
             if self.is_transferred:
                 self._directory = self.api._load_directory(self.cid)
         if self._directory is None:
-            msg = 'No directory corresponding to this task: Task is %s.' % \
+            msg = 'No directory assciated with this task: Task is %s.' % \
                 self.status_human.lower()
             raise TaskError(msg)
         return self._directory
 
     @property
     def parent(self):
-        """Parent directory of the corresponding directory"""
+        """Parent directory of the associated directory"""
         return self.directory.parent
 
     @property
     def count(self):
-        """Number of entries in the corresponding directory"""
+        """Number of entries in the associated directory"""
         return self.directory.count
 
-    def list(self, count=30, order='user_ptime', asc=False, show_dir=True):
+    def list(self, count=30, order='user_ptime', asc=False, show_dir=True,
+             natsort=True):
         """
-        List files of the corresponding directory to this task.
+        List files of the associated directory to this task.
 
         :param int count: number of entries to be listed
         :param str order: originally named `o`
@@ -1378,7 +1412,10 @@ class Task(Directory):
         :param bool show_dir: whether to show directories
 
         """
-        return self.directory.list(count, order, asc, show_dir)
+        return self.directory.list(count, order, asc, show_dir, natsort)
+
+    def __unicode__(self):
+        return self.name
 
 
 class Torrent(Base):

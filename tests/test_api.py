@@ -68,16 +68,18 @@ def delete_entries(entries):
         time.sleep(2)
 
 
-def is_task_created(tasks, info_hash):
+def is_task_created(tasks, info_hash, is_directory=True):
     """
     Check if a task is created against a hash value
 
     :param list tasks: a list of :class:`API.Task` objects
     :param str info_hash: hash value of the target task
+    :param bool is_directory: whether this task has an associated directory
 
     """
     for task in tasks:
         if task.info_hash == info_hash:
+            assert task.is_directory == is_directory
             return True
     else:
         return False
@@ -226,7 +228,7 @@ class URLTaskTests(TestCase):
         info_hash = TEST_TARGET_URL1['info_hash']
         assert self.api.add_task_url(url)
         tasks = self.api.get_tasks()
-        is_task_created(tasks, info_hash)
+        is_task_created(tasks, info_hash, False)
 
     def test_add_task_url_magnet(self):
         """
