@@ -28,12 +28,14 @@ CHECKPOINT_URL = 'http://passport.115.com/?ct=ajax&ac=ajax_check_point'
 
 
 class RequestsLWPCookieJar(cookielib.LWPCookieJar, RequestsCookieJar):
-    """RequestsCookieJar compatible LWPCookieJar"""
+    """:class:`requests.cookies.RequestsCookieJar` compatible
+    :class:`cookielib.LWPCookieJar`"""
     pass
 
 
 class RequestsMozillaCookieJar(cookielib.MozillaCookieJar, RequestsCookieJar):
-    """RequestsCookieJar compatible RequestsMozillaCookieJar"""
+    """:class:`requests.cookies.RequestsCookieJar` compatible
+    :class:`cookielib.MozillaCookieJar`"""
     pass
 
 
@@ -227,7 +229,9 @@ class API(object):
 
     @property
     def cookies(self):
-        """Cookies getter shortcut"""
+        """
+        Cookies of the current API session (cookies getter shortcut)
+        """
         return self.http.session.cookies
 
     @cookies.setter
@@ -377,10 +381,10 @@ class API(object):
         :param str filename: path to torrent file to upload
         :param bool select: whether to select files in the torrent.
 
-            * If True, it returns the opened torrent (:class:`.Torrent`) and
+            * True: it returns the opened torrent (:class:`.Torrent`) and
                 can then iterate files in :attr:`.Torrent.files` and
                 select/unselect them before calling :func:`Torrent.submit`
-            * If False, it will submit the torrent with default selected files
+            * False: it will submit the torrent with default selected files
 
         """
         filename = eval_path(filename)
@@ -1236,16 +1240,11 @@ class Task(Base):
     BitTorrent or URL task
 
     :ivar datetime.datetime add_time: added time
-    :ivar str cid: associated directory id, if any:
-
-        * For a directory task (e.g. BT task): this is its associated
-            directory's cid
-        * For a file task (e.g. HTTP url task): this is the cid of the
-            downloads directory
-
+    :ivar str cid: associated directory id, if any. For a directory task (
+        e.g. BT task), this is its associated directory's cid. For a file
+        task (e.g. HTTP url task), this is the cid of the downloads directory.
         This value may be None if the task is failed and has no corresponding
         directory
-
     :ivar str file_id: equivalent to `cid` of :class:`.Directory`. This value
         may be None if the task is failed and has no corresponding directory
     :ivar str info_hash: hashed value
