@@ -212,7 +212,7 @@ class API(object):
         self.cookies = cookies_class(f)
 
     def load_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Load cookies from the file `API.cookies_filename`"""
+        """Load cookies from the file :attribute:`API.cookies_filename`"""
         self._init_cookies()
         if os.path.exists(self.cookies.filename):
             self.cookies.load(ignore_discard=ignore_discard,
@@ -220,7 +220,7 @@ class API(object):
             self._reset_cache()
 
     def save_cookies(self, ignore_discard=True, ignore_expires=True):
-        """Save cookies to the file `API.cookies_filename`"""
+        """Save cookies to the file :attribute:`API.cookies_filename`"""
         if not isinstance(self.cookies, cookielib.FileCookieJar):
             m = 'Cookies must be a cookielib.FileCookieJar object to be saved.'
             raise APIError(m)
@@ -377,7 +377,7 @@ class API(object):
 
     def add_task_bt(self, filename, select=False):
         """
-        Added a new BT task
+        Add a new BT task
 
         :param str filename: path to torrent file to upload
         :param bool select: whether to select files in the torrent.
@@ -397,6 +397,8 @@ class API(object):
 
     def add_task_url(self, target_url):
         """
+        Add a new URL task
+
         :param str target_url: the URL of the file that to be downloaded
 
         """
@@ -423,7 +425,7 @@ class API(object):
 
         :param str filename: path to the file to upload
         :param directory: destionation :class:`.Directory`, defaults to
-            :class:`.API.downloads_directory` if None
+            :attribute:`.API.downloads_directory` if None
         :return: the uploaded file
         :rtype: :class:`.File`
         """
@@ -693,7 +695,7 @@ class API(object):
     def _req_files_add(self, pid, cname):
         """
         Add a directory
-        :param int pid: parent directory id
+        :param str pid: parent directory id
         :param str cname: directory name
         """
         url = self.web_api_url + '/add'
@@ -709,7 +711,7 @@ class API(object):
     def _req_files_move(self, pid, fids):
         """
         Move files or directories
-        :param int pid: target directory id
+        :param str pid: target directory id
         :param list fids: a list of ids of files or directories to be moved
         """
         url = self.web_api_url + '/move'
@@ -1076,7 +1078,7 @@ class File(BaseFile):
 
     @property
     def url(self):
-        """Alias for :func:`File.get_download_url`"""
+        """Alias for :method:`File.get_download_url`"""
         return self.get_download_url()
 
     def download(self, path=None, show_progress=True, resume=True,
@@ -1103,7 +1105,7 @@ class File(BaseFile):
 class Directory(BaseFile):
     """
     :ivar str cid: cid of this directory
-    :ivar int pid: represents the parent directory it belongs to
+    :ivar str pid: represents the parent directory it belongs to
     :ivar int count: number of entries in this directory
     :ivar datetime.datetime date_created: integer, originally named `t`
     :ivar str pickcode: string, originally named `pc`
