@@ -281,6 +281,7 @@ class API(object):
     def get_user_info(self):
         """
         Get user info
+
         :return: a dictionary of user information
         :rtype: dict
 

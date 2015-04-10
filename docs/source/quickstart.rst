@@ -32,6 +32,46 @@ Then, you can login without providing username and password, only specifying the
     >>> api.login(section='another')
     True
 
+Cookies
+-------
+
+You can enable cookies to make a persistent session by providing ``persistent`` (True) and ``cookies_filename`` arguments. Remember to also pass ``auto_logout`` as False, since the cookies will be invalid if logging out of the current session.
+
+.. code-block:: python
+
+    >>> from u115 import API
+    >>> api = API(auto_logout=False, persistent=True, cookies_filename='cookies.txt')
+    >>> api.has_logged_in
+    False
+    >>> api.login(section='default')
+    >>> api.has_logged_in
+    True
+    >>> exit()
+    # Invoke Python interpreter again
+    >>> from u115 import API
+    >>> api = API(auto_logout=False, persistent=True, cookies_filename='cookies.txt')
+    >>> api.has_logged_in  # Already logged in using cookies
+    True
+
+You can also save cookies or load cookies explicitly.
+
+.. code-block:: python
+
+    >>> from u115 import API
+    >>> api = API(auto_logout=False)
+    >>> api.login()
+    True
+    # Do something ...
+    >>> api.save_cookies()
+    >>> exit()
+    # Now invoke Python interpreter again
+    >>> from u115 import API
+    >>> api = API()
+    >>> api.load_cookies()
+    >>> api.has_logged_in
+    True
+
+
 Getting tasks
 -------------
 
@@ -95,6 +135,17 @@ Or you can edit the torrent and select files before submitting:
     [<TorrentFile: [ ] black bullet.mp4>, <TorrentFile: [*] black bullet [commentary].mp4>, ...]
     >>> u.submit()
 
+Creating URL tasks
+------------------
+
+You can create URL (link) tasks. HTTP, HTTPS, FTP, Magnet, and eD2k links are supported.
+
+.. code-block:: python
+
+    >>> api.add_task_url('http://example.com/file.txt')
+    >>> api.add_task_url('magnet:?xt.1=urn:sha1:YNCKHT.2=urn:sha1:TXGCZQT')
+
+
 Directories and files
 ---------------------
 
@@ -119,6 +170,7 @@ You can list contents of a directory:
     >>> dd_entries = d_entries[0].list()
     >>> dd_entries.list()
     [<File: IMG_0003.jpg>, <File: IMG_0004.jpg>, <File: IMG_0005.jpg>, <File: IMG_0006.jpg>]
+
 
 Download files
 --------------
@@ -160,8 +212,16 @@ The file you upload can be a torrent file, which you can open later and create a
     >>> t.submit()
     
 
-Storage info
-------------
+Account and storage info
+------------------------
+
+You can get user info:
+
+.. code-block:: python
+
+    >>> api.user_id
+    >>> api.username
+    >>> api.get_user_info()
 
 You can have an overview of your storage information:
 
