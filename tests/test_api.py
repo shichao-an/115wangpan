@@ -19,6 +19,7 @@ LARGE_COUNT = 999
 SMALL_COUNT = 2
 TEST_DIR = pjoin(conf.PROJECT_PATH, 'tests')
 DATA_DIR = pjoin(TEST_DIR, 'data')
+DOWNLOADS_DIR = pjoin(TEST_DIR, 'downloads')
 
 # This torrent's directory contains a single file
 TEST_TORRENT1 = {
@@ -52,8 +53,19 @@ TEST_TARGET_URL2 = {
     'url': open(pjoin(DATA_DIR, 'magnet.txt')).read().strip(),
     'info_hash': '1f9f293e5e4ef63eba76d3485fe54577737df0e8',
 }
+
+TEST_UPLOAD_FILE = pjoin(DATA_DIR, '5781687.png')
 TEST_COOKIE_FILE = pjoin(DATA_DIR, '115cookies')
+TEST_DOWNLOAD_FILE = pjoin(DOWNLOADS_DIR, '5781687.png')
 TASK_TRANSFERRED_TIMEOUT = 60
+
+
+def delete_entries(entries):
+    """Delete entries (files or directories)"""
+    for entry in entries:
+        entry.delete()
+        # Avoid JobError
+        time.sleep(2)
 
 
 def is_task_created(tasks, info_hash):
@@ -244,10 +256,7 @@ class DownloadsDirectoryTests(TestCase):
         # Clean up all files in the downloads directory
         downloads_directory = self.api.downloads_directory
         entries = downloads_directory.list()
-        for entry in entries:
-            entry.delete()
-            # Avoid JobError
-            time.sleep(2)
+        delete_entries(entries)
 
     def test_transferred_task_directories(self):
         """
@@ -296,10 +305,7 @@ class DownloadsDirectoryTests(TestCase):
         # Clean up all files in the downloads directory
         downloads_directory = self.api.downloads_directory
         entries = downloads_directory.list()
-        for entry in entries:
-            entry.delete()
-            # Avoid JobError
-            time.sleep(2)
+        delete_entries(entries)
 
 
 class SearchTests(TestCase):
@@ -310,10 +316,7 @@ class SearchTests(TestCase):
         # Clean up all files in the downloads directory
         downloads_directory = self.api.downloads_directory
         entries = downloads_directory.list()
-        for entry in entries:
-            entry.delete()
-            # Avoid JobError
-            time.sleep(2)
+        delete_entries(entries)
         # Create a task that is transferred
         filename = TEST_TORRENT2['filename']
         assert self.api.add_task_bt(filename)
@@ -342,10 +345,58 @@ class SearchTests(TestCase):
         # Clean up all files in the downloads directory
         downloads_directory = self.api.downloads_directory
         entries = downloads_directory.list()
-        for entry in entries:
-            entry.delete()
-            # Avoid JobError
-            time.sleep(2)
+        delete_entries(entries)
+
+
+class UploadTests(TestCase):
+    """Test upload"""
+    def setUp(self):
+        # Initialize a new API instance
+        self.api = API()
+        self.api.login(section='test')
+
+    def test_upload_downloads_directory(self):
+        """Upload to downloads directory (default)"""
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        delete_entries(entries)
+        uploaded_file = self.api.upload(TEST_UPLOAD_FILE)
+        assert isinstance(uploaded_file, File)
+        time.sleep(5)
+        entries = downloads_directory.list()
+        assert entries
+        entry = entries[0]
+        assert entry.fid == uploaded_file.fid
+        delete_entries(entries)
+
+
+class DownloadTests(TestCase):
+    """
+    Test download
+    TODO: add more tests with different download argument
+    """
+    def setUp(self):
+        # Initialize a new API instance
+        self.api = API()
+        self.api.login(section='test')
+        if os.path.exists(TEST_DOWNLOAD_FILE):
+            os.remove(TEST_DOWNLOAD_FILE)
+
+    def test_download(self):
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        delete_entries(entries)
+        # Upload a file
+        uploaded_file = self.api.upload(TEST_UPLOAD_FILE)
+        assert isinstance(uploaded_file, File)
+        time.sleep(5)
+        entries = downloads_directory.list()
+        assert entries
+        entry = entries[0]
+        entry.download(path=pjoin(DOWNLOADS_DIR))
+        delete_entries(entries)
 
 
 class AuthTests(TestCase):
