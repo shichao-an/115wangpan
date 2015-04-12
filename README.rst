@@ -69,7 +69,7 @@ Usage
     >>> files
     [<File: 第8局 修行.mkv>]
     >>> f = files[0]
-    >>> f.get_download_url()
+    >>> f.url
     u'http://cdnuni.115.com/some-very-long-url.mkv'
     >>> f.directory
     <Directory: 咲-Saki- 阿知賀編 episode of side-A>

@@ -15,6 +15,7 @@ Contents
    :maxdepth: 4
 
    quickstart
+   cli
    api
 
 Indices and tables

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.5.0 (2015-04-12)
+------------------
+
+- 115down: supported both keeping directory structure and flattening
+- Fixed ``Task`` to not inherit ``Directory``
+
 0.4.2 (2015-04-03)
 ------------------
 
@@ -29,7 +35,7 @@ Changelog
 ------------------
 
 - Used external package "homura" to replace downloader utility
-- Merge #8: added add_task_url  API 
+- Merge #8: added add_task_url API
 
 0.2.4 (2014-10-09)
 ------------------

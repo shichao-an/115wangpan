@@ -1484,9 +1484,11 @@ class TorrentFile(Base):
         self.selected = selected
 
     def select(self):
+        """Select this file"""
         self.selected = True
 
     def unselect(self):
+        """Unselect this file"""
         self.selected = False
 
     def __unicode__(self):

@@ -1,6 +1,8 @@
 Quickstart
 ==========
 
+.. _login-and-credential-file:
+
 Login and credential file
 -------------------------
 
@@ -30,6 +32,14 @@ Then, you can login without providing username and password, only specifying the
 .. code-block:: python
 
     >>> api.login(section='another')
+    True
+
+To check whether API has logged:
+
+
+.. code-block:: python
+
+    >>> api.has_logged_in
     True
 
 Cookies
@@ -102,10 +112,14 @@ To get the information of a specific task:
     >>> task.status_human
     'TRANSFERRED'
 
-If the tasks has been transferred, it has a associated directory which contains "lixian" (offline) files:
+Normally, if it is a BitTorrent task and has been transferred, it has an associated directory which contains "lixian" (offline) files:
 
 .. code-block:: python
 
+    >>> task.is_directory
+    True
+    >>> task.is_transferred
+    True
     >>> task.directory
     <Directory: Sword Art Online II - 10.mkv>
     >>> task.list() # or task.directory.list()
