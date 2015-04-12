@@ -61,7 +61,7 @@ TASK_TRANSFERRED_TIMEOUT = 60
 
 
 def delete_entries(entries):
-    """Delete entries (files or directories)"""
+    """Delete entries (files, directories, or tasks)"""
     for entry in entries:
         entry.delete()
         # Avoid JobError
@@ -108,6 +108,9 @@ class TaskTests(TestCase):
         # Initialize a new API instance
         self.api = API()
         self.api.login(section='test')
+        # Clean up all tasks
+        tasks = self.api.get_tasks()
+        delete_entries(tasks)
 
     def test_get_tasks(self):
         filename1 = TEST_TORRENT1['filename']
@@ -147,8 +150,7 @@ class TaskTests(TestCase):
     def tearDown(self):
         # Clean up all tasks
         tasks = self.api.get_tasks()
-        for task in tasks:
-            task.delete()
+        delete_entries(tasks)
 
 
 class BitTorrentTaskTests(TestCase):
@@ -159,6 +161,9 @@ class BitTorrentTaskTests(TestCase):
         # Initialize a new API instance
         self.api = API()
         self.api.login(section='test')
+        # Clean up all tasks
+        tasks = self.api.get_tasks()
+        delete_entries(tasks)
 
     def test_add_task_bt_select_false(self):
         """
@@ -210,8 +215,7 @@ class BitTorrentTaskTests(TestCase):
     def tearDown(self):
         # Clean up all tasks
         tasks = self.api.get_tasks()
-        for task in tasks:
-            task.delete()
+        delete_entries(tasks)
 
 
 class URLTaskTests(TestCase):
@@ -219,6 +223,9 @@ class URLTaskTests(TestCase):
         # Initialize a new API instance
         self.api = API()
         self.api.login(section='test')
+        # Clean up all tasks
+        tasks = self.api.get_tasks()
+        delete_entries(tasks)
 
     def test_add_task_url_http(self):
         """
@@ -243,8 +250,7 @@ class URLTaskTests(TestCase):
     def tearDown(self):
         # Clean up all tasks
         tasks = self.api.get_tasks()
-        for task in tasks:
-            task.delete()
+        delete_entries(tasks)
 
 
 class DownloadsDirectoryTests(TestCase):
@@ -302,8 +308,7 @@ class DownloadsDirectoryTests(TestCase):
     def tearDown(self):
         # Clean up all tasks
         tasks = self.api.get_tasks()
-        for task in tasks:
-            task.delete()
+        delete_entries(tasks)
         # Clean up all files in the downloads directory
         downloads_directory = self.api.downloads_directory
         entries = downloads_directory.list()
@@ -342,8 +347,7 @@ class SearchTests(TestCase):
     def tearDown(self):
         # Clean up all tasks
         tasks = self.api.get_tasks()
-        for task in tasks:
-            task.delete()
+        delete_entries(tasks)
         # Clean up all files in the downloads directory
         downloads_directory = self.api.downloads_directory
         entries = downloads_directory.list()
