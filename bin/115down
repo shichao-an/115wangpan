@@ -5,7 +5,9 @@ import argparse
 import getpass
 import re
 import os
+import sys
 from u115 import API, File, Directory, Task
+from u115 import __version__ as VERSION
 from u115.utils import mkdir_p
 
 # SOCKS proxy
@@ -41,9 +43,11 @@ def parse_args():
                         help="number of entries to get")
     parser.add_argument('-m', '--sub-count', default=0, type=int,
                         dest='sub_count',
-                        help="number of sub-entries to get (0 for all)")
+                        help="number of sub-entries to get (defaults to all)")
     parser.add_argument('-s', '--dry-run', action='store_true',
                         help="print urls instead of downloading")
+    parser.add_argument('-v', '--version', action='store_true', default=False,
+                        help="print version and exit")
     args = parser.parse_args()
     if args.entry_num is not None:
         if args.tasks is True:
@@ -210,6 +214,9 @@ def parse_sub_num(s, parser):
 
 def main():
     args = parse_args()
+    if args.version:
+        print(VERSION)
+        sys.exit()
     global DRY_RUN
     global FLAT
     DRY_RUN = args.dry_run

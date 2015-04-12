@@ -5,7 +5,9 @@ from __future__ import print_function
 import argparse
 import getpass
 import os
+import sys
 from u115 import API
+from u115 import __version__ as VERSION
 
 # SOCKS proxy
 if os.environ.get('PROXY_ADDR'):
@@ -28,6 +30,8 @@ def parse_args():
     group2.add_argument('-u', '--username', help='account or username')
     group2.add_argument('-d', '--section', default='default',
                         help='section name in credential file')
+    group1.add_argument('-v', '--version', action='store_true', default=False,
+                        help="print version and exit")
     args = parser.parse_args()
     return args
 
@@ -51,6 +55,9 @@ def add_new_task(args):
 
 def main():
     args = parse_args()
+    if args.version:
+        print(VERSION)
+        sys.exit()
     add_new_task(args)
 
 
