@@ -256,6 +256,23 @@ Delete the file or directory:
     True
 
 
+Search directories and files
+----------------------------
+
+You can search directories and files by passing the ``keyword`` to :meth:`u115.API.search`:
+
+.. code-block:: python
+
+    >>> api.search('manga')
+    [<Directory: [WOLF][Mangaka-san][01-12+OVA01-06][GB][720P][END]>, <File: [WOLF][Mangaka-san][01][GB][720P].mp4>, ...]
+
+By default, the search result limits to 30 items. To get more result, pass ``count`` to the methods:
+
+.. code-block:: python
+    
+    >>> api.search('.mp4', count=100)
+
+
 Download files
 --------------
 

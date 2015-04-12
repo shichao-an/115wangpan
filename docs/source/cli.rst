@@ -12,7 +12,7 @@ There are two commands ``115down`` and ``115up`` that come with this package.
 Print help
 ~~~~~~~~~~
 
-You can a comprehensive help message using the ``-h`` option:
+You can print a comprehensive help message using the ``-h`` option:
 
 ::
 
