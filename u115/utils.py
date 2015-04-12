@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 import datetime
+import errno
 import os
 import six
 import sys
@@ -73,3 +74,16 @@ def utf8_encode(s):
 def pjoin(*args):
     """Short cut for os.path.join"""
     return os.path.join(*args)
+
+
+def mkdir_p(path):
+    """mkdir -p path"""
+    if PY3:
+        return os.makedirs(path, exist_ok=True)
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
