@@ -85,7 +85,7 @@ You can also save cookies or load cookies explicitly.
 Getting tasks
 -------------
 
-You can retrieve tasks using :func:`u115.API.get_tasks`. This function takes an optional argument, `count`, which defaults to 30. You can specify a smaller or larger integer value:
+You can retrieve tasks using :func:`u115.API.get_tasks`. This function takes an optional argument, ``count``, which defaults to 30. You can specify a smaller or larger integer value:
 
 .. code-block:: python
 
@@ -163,14 +163,13 @@ You can create URL (link) tasks. HTTP, HTTPS, FTP, Magnet, and eD2k links are su
 System directories 
 ------------------
 
-The account has its offline space that store files transferred from tasks or uploaded by users. The root directory has access to all available files.
+The account has its offline space that stores files transferred from tasks or uploaded by users. The root directory has access to all available files.
 
 .. code-block:: python
 
     >>> api.root_directory
     <Directory: 文件>
     >>> api.root_directory.list()
-    api.root_directory.list()
     [<Directory: 我的接收>]
 
 
@@ -181,7 +180,7 @@ After your tasks are transferred, the files go to the downloads directory (:attr
     >>> api.downloads_directory
     <Directory: 离线下载>
 
-If you have created BitTorrent tasks by uploading torrents, you will a torrents directory (:attr:`u115.API.torrents_directory`), which holds uploaded torrent files.
+If you have created BitTorrent tasks by uploading torrents, you will have a torrents directory (:attr:`u115.API.torrents_directory`), which holds uploaded torrent files.
 
 .. code-block:: python
 
@@ -271,6 +270,19 @@ For offline files, you can retrieve download links:
     u'http://cdnuni.115.com/very-long-name.mov'
     >>> f.download()
              1%   14.3 MiB     437.3 KiB/s         0:53:45 ETA
+
+
+There are also extra options for :meth:`download() <u115.File.download>`. The default behavior is downloading the file to the current working directory, resuming download progress if the file already exists (with the same path), and automatically retrying upon closed transfer until the file's download is finished.
+
+.. code-block:: python
+
+    # Download to path ~/Downloads
+    >>> f.download(path='~/Downloads')
+    # Do not show progres
+    >>> f.download(show_progress=False)
+    # Override existing file without resuming downloads
+    >>> f.download(resume=False)
+
 
 Upload files
 ------------
