@@ -160,19 +160,38 @@ You can create URL (link) tasks. HTTP, HTTPS, FTP, Magnet, and eD2k links are su
     >>> api.add_task_url('magnet:?xt.1=urn:sha1:YNCKHT.2=urn:sha1:TXGCZQT')
 
 
-Directories and files
----------------------
+System directories 
+------------------
 
-If you have created BitTorrent tasks, you will have two directories by default, downloads directory which holds downloaded and transferred files, and torrents directory, which holds uploaded torrent files.
+The account has its offline space that store files transferred from tasks or uploaded by users. The root directory has access to all available files.
+
+.. code-block:: python
+
+    >>> api.root_directory
+    <Directory: 文件>
+    >>> api.root_directory.list()
+    api.root_directory.list()
+    [<Directory: 我的接收>]
+
+
+After your tasks are transferred, the files go to the downloads directory (:attr:`u115.API.downloads_directory`).
 
 .. code-block:: python
 
     >>> api.downloads_directory
     <Directory: 离线下载>
+
+If you have created BitTorrent tasks by uploading torrents, you will a torrents directory (:attr:`u115.API.torrents_directory`), which holds uploaded torrent files.
+
+.. code-block:: python
+
     >>> api.torrents_directory
     <Directory: 种子文件>
 
-You can list contents of a directory:
+Directory and files
+-------------------
+
+You can list contents of a directory using ``list()`` method of a :class:`Directory <u115.Directory>`. 
 
 .. code-block:: python
 
@@ -186,6 +205,58 @@ You can list contents of a directory:
     [<File: IMG_0003.jpg>, <File: IMG_0004.jpg>, <File: IMG_0005.jpg>, <File: IMG_0006.jpg>]
 
 
+To get number of entries in a directory:
+
+.. code-block:: python
+
+    >>> d.count
+    45
+
+The default behavior is to list 30 entries. You can list specified number of entries, either with or without ``count``. The following two are equivalent:
+
+.. code-block:: python
+
+    >>> d.list(100)
+    >>> d.list(count=100)
+
+List all files by passing ``count`` of itself:
+
+.. code-block:: python
+
+    >>> d.list(d.count)
+
+There are other arguments that can be passed to ``list()``, e.g. ``order`` (order of entries, which can be `user_ptime` (default), `file_size` and `file_name`), ``asc`` (whether in ascending order), ``show_dir`` (whether to show directories). For full list of arguments, see :meth:`u115.Directory.list`.
+
+.. code-block:: python
+
+    # List 100 smallest files
+    >>> d.list(count=100, order='file_size', asc=True)
+    # Do not include directories
+    >>> d.list(show_dir=False)
+
+A directory has a parent directory, which can be accessed via ``parent`` attribute:
+
+.. code-block:: python
+
+    >>> d.parent
+    <Directory: 离线下载>
+    >>> d.parent.parent
+    <Directory: 我的接收>
+    # root directory has no parent
+    >>> d.root_directory.parent
+    # None
+
+Delete the file or directory:
+
+.. code-block:: python
+
+    >>> f = d.list()[0]
+    >>> f.delete()
+    True
+    >>> f.is_deleted
+    True
+
+
 Download files
 --------------
 
@@ -196,7 +267,7 @@ For offline files, you can retrieve download links:
     >>> f = dd_entries.list()[0]
     >>> f
     <File: video.mov>
-    >>> f.get_download_url()
+    >>> f.url
     u'http://cdnuni.115.com/very-long-name.mov'
     >>> f.download()
              1%   14.3 MiB     437.3 KiB/s         0:53:45 ETA
@@ -234,8 +305,11 @@ You can get user info:
 .. code-block:: python
 
     >>> api.user_id
+    u'123456789'
     >>> api.username
+    u'yourname@exmaple.com'
     >>> api.get_user_info()
+    {u'state': True, u'data': ...}
 
 You can have an overview of your storage information:
 

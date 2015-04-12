@@ -20,7 +20,7 @@ You can a comprehensive help message using the ``-h`` option:
 
 Authentication
 ~~~~~~~~~~~~~~
-``115down`` needs to be authenticated every time it is invoked. You pass username to ``-u`` option, and you will be prompted for password without echoing.
+``115down`` needs to be authenticated every time it is invoked. You can pass username to ``-u`` option, and you will be prompted for password without echoing.
 
 ::
 
@@ -39,6 +39,7 @@ Listing tasks
 Use ``-t`` to list task. The result output will contain a list of numbered tasks, each with status, size and name. The tasks are reversely ordered by creation time.
 
 ::
+
     $ 115down -t
     1 [TRANSFERRED] [3.2 GiB] <Task: [Airota&DHR&Mony][Jinrui wa Suitai Shimashita][1280x720]>
     2 [TRANSFERRED] [3.7 GiB] <Task: [CASO][Kill_Me_Baby][01-13][GB_BIG5][1280x720][x264_AAC]>
@@ -64,10 +65,6 @@ To list more entries than default, pass a number to the ``-n`` option:
 ::
 
     $ 115down -n 60
-    1 ...
-    2 ...
-    ...
-    60 ...
 
 
 To further list contents in a numbered entry:
@@ -102,7 +99,7 @@ Download item 2 and 4:
 
     $ 115down 1 2,4
 
-Download item 1-8:
+Download items 1 to 8:
 
 ::
 
@@ -115,7 +112,7 @@ Download a combination of items:
     $ 115down 1 1,3-4,6,9-12
 
 
-The default downloading behavior is keeping the directory structure. If you want to flatten the directory so all files without creating any directories, pass the ``-f`` switch. This will download everything of this entry into the current working directory:
+The default downloading behavior is keeping the directory structure. If you want to flatten the directory, pass the ``-f`` switch. This will download everything of this entry into the current working directory without creating any directories:
 
 ::
 
@@ -130,7 +127,7 @@ If you want to print the files to be downloaded instead of really downloading th
 115up
 -----
 
-You can create either BitTorrent or URL tasks using ``115up``. The authentication is same to that of ``115down``.
+You can create either BitTorrent or URL tasks using ``115up``. The authentication method is same to that of ``115down``.
 
 To create a BitTorrent task, pass the torrent path to ``-t``. If the task is succesfully created, its name and status will be printed.
 
