@@ -209,6 +209,8 @@ def parse_sub_num(s, parser):
                     res.update(r)
             except:
                 raise parser.error(msg)
+    res = list(res)
+    res.sort()
     return res
 
 
