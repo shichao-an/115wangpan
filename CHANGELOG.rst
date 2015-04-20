@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.1 (2015-04-20)
+------------------
+
+- 115down: fixed sub-entry range parser to ordered list
+
 0.5.0 (2015-04-12)
 ------------------
 
