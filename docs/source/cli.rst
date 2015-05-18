@@ -36,7 +36,7 @@ If you don't want to be prompted for password every time, :ref:`set the credenti
 Using cookies
 ~~~~~~~~~~~~~
 
-You can use cookies to enable persistent session. The cookies file is ``~/.115cookies``. If this file exists, `115down` and `115up` will automatically use cookies. Otherwise, you have to save the cookies first using the ``-c`` option:
+You can use cookies to enable persistent session. The cookies file is ``~/.115cookies``. If this file exists, ``115down`` and ``115up`` will automatically use cookies. Otherwise, you have to save the cookies first using the ``-c`` option:
 
 ::
 
@@ -142,7 +142,7 @@ If you want to print the files to be downloaded instead of really downloading th
 115up
 -----
 
-You can create either BitTorrent or URL tasks using ``115up``. The authentication method is same to that of ``115down``.
+You can create either BitTorrent or URL tasks using ``115up``. The authentication method and use of cookies are same to that of ``115down``.
 
 To create a BitTorrent task, pass the torrent path to ``-t``. If the task is succesfully created, its name and status will be printed.
 
