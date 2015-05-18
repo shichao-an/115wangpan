@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.0 (2015-05-17)
+------------------
+
+- Deprecated ``auto_logout`` argument
+- Added cookies support to CLI commands
+
 0.5.1 (2015-04-20)
 ------------------
 
