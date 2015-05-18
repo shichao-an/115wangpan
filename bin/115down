@@ -2,13 +2,16 @@
 
 from __future__ import print_function
 import argparse
+import cookielib
 import getpass
 import re
 import os
 import sys
 from u115 import API, File, Directory, Task
 from u115 import __version__ as VERSION
-from u115.utils import mkdir_p
+from u115.utils import mkdir_p, eval_path
+from u115.conf import COOKIES_FILENAME
+
 
 # SOCKS proxy
 if os.environ.get('PROXY_ADDR'):
@@ -20,6 +23,7 @@ if os.environ.get('PROXY_ADDR'):
     socket.socket = socks.socksocket
 DRY_RUN = False
 FLAT = False
+SAVE_COOKIES = False
 
 
 def parse_args():
@@ -30,6 +34,8 @@ def parse_args():
                        help='section name in credential file')
     parser.add_argument('-f', '--flat', action='store_true',
                         help="flatten directory structure")
+    parser.add_argument('-c', '--cookies', action='store_true',
+                        help="log in and save cookies to ~/.115cookies")
     parser.add_argument('entry_num', nargs='?', help='entry number',
                         type=int)
     parser.add_argument(
@@ -60,10 +66,35 @@ def parse_args():
     return args
 
 
+def init_api(username, password, section):
+    """Initialize API and authenticate via cookies or credentials"""
+    if SAVE_COOKIES is True:
+        api = API()
+        api._init_cookies()
+        api.login(username, password, section)
+        api.save_cookies()
+    elif os.path.exists(COOKIES_FILENAME):
+        try:
+            api = API(persistent=True)
+        except cookielib.LoadError:
+            print('Cannot read cookies from %s. ' % COOKIES_FILENAME)
+            print('Use -c option to save cookies and try again.')
+            sys.exit(2)
+        if api.has_logged_in:
+            print('API has logged in from cookies.')
+        else:
+            print('API fails to log in from cookies.')
+            print('Use -c option to save cookies and try again.')
+            sys.exit(1)
+    else:
+        api = API()
+        api.login(username, password, section)
+    return api
+
+
 def get_entries(username, password, section, entry_num, sub_num,
                 count, sub_count, list_tasks=False):
-    api = API()
-    api.login(username, password, section)
+    api = init_api(username, password, section)
     if list_tasks is True:
         entries = api.get_tasks(count)
     else:
@@ -221,8 +252,10 @@ def main():
         sys.exit()
     global DRY_RUN
     global FLAT
+    global SAVE_COOKIES
     DRY_RUN = args.dry_run
     FLAT = args.flat
+    SAVE_COOKIES = args.cookies
     password = None
     if args.username is not None:
         password = getpass.getpass()

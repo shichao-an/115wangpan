@@ -3,11 +3,14 @@
 
 from __future__ import print_function
 import argparse
+import cookielib
 import getpass
 import os
 import sys
 from u115 import API
 from u115 import __version__ as VERSION
+from u115.conf import COOKIES_FILENAME
+
 
 # SOCKS proxy
 if os.environ.get('PROXY_ADDR'):
@@ -19,9 +22,14 @@ if os.environ.get('PROXY_ADDR'):
     socket.socket = socks.socksocket
 
 
+SAVE_COOKIES = False
+
+
 def parse_args():
     parser = argparse.ArgumentParser(prog='115up')
     group1 = parser.add_mutually_exclusive_group(required=True)
+    parser.add_argument('-c', '--cookies', action='store_true',
+                        help="log in and save cookies to ~/.115cookies")
     group1.add_argument('-l', '--link',
                         help="link resource (HTTP, FTP, eD2k or Magnet)")
     group1.add_argument('-t', '--torrent',
@@ -36,12 +44,37 @@ def parse_args():
     return args
 
 
+def init_api(username, password, section):
+    """Initialize API and authenticate via cookies or credentials"""
+    if SAVE_COOKIES is True:
+        api = API()
+        api._init_cookies()
+        api.login(username, password, section)
+        api.save_cookies()
+    elif os.path.exists(COOKIES_FILENAME):
+        try:
+            api = API(persistent=True)
+        except cookielib.LoadError:
+            print('Cannot read cookies from %s. ' % COOKIES_FILENAME)
+            print('Use -c option to save cookies and try again.')
+            sys.exit(2)
+        if api.has_logged_in:
+            print('API has logged in from cookies.')
+        else:
+            print('API fails to log in from cookies.')
+            print('Use -c option to save cookies and try again.')
+            sys.exit(1)
+    else:
+        api = API()
+        api.login(username, password, section)
+    return api
+
+
 def add_new_task(args):
     password = None
     if args.username is not None:
         password = getpass.getpass()
-    api = API()
-    api.login(args.username, password, args.section)
+    api = init_api(args.username, password, args.section)
     if args.torrent is not None:
         r = api.add_task_bt(args.torrent)
     elif args.link is not None:
@@ -55,6 +88,8 @@ def add_new_task(args):
 
 def main():
     args = parse_args()
+    global SAVE_COOKIES
+    SAVE_COOKIES = args.cookies
     if args.version:
         print(VERSION)
         sys.exit()
