@@ -45,21 +45,22 @@ To check whether API has logged:
 Cookies
 -------
 
-You can enable cookies to make a persistent session by providing ``persistent`` (True) and ``cookies_filename`` arguments. Remember to also pass ``auto_logout`` as False, since the cookies will be invalid if logging out of the current session.
+You can enable cookies to make a persistent session by providing ``persistent`` (True) and ``cookies_filename`` arguments.
 
 .. code-block:: python
 
     >>> from u115 import API
-    >>> api = API(auto_logout=False, persistent=True, cookies_filename='cookies.txt')
+    >>> api = API(persistent=True, cookies_filename='cookies.txt')
     >>> api.has_logged_in
     False
     >>> api.login(section='default')
     >>> api.has_logged_in
     True
+    >>> api.save_cookies()
     >>> exit()
     # Invoke Python interpreter again
     >>> from u115 import API
-    >>> api = API(auto_logout=False, persistent=True, cookies_filename='cookies.txt')
+    >>> api = API(persistent=True, cookies_filename='cookies.txt')
     >>> api.has_logged_in  # Already logged in using cookies
     True
 
@@ -68,7 +69,7 @@ You can also save cookies or load cookies explicitly.
 .. code-block:: python
 
     >>> from u115 import API
-    >>> api = API(auto_logout=False)
+    >>> api = API()
     >>> api.login()
     True
     # Do something ...
