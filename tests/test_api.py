@@ -464,13 +464,13 @@ class CookiesTests(TestCase):
     def setUp(self):
         if os.path.exists(TEST_COOKIE_FILE):
             os.remove(TEST_COOKIE_FILE)
-        self.api = API(auto_logout=False, persistent=True,
+        self.api = API(persistent=True,
                        cookies_filename=TEST_COOKIE_FILE)
         self.api.login(section='test')
+        self.api.save_cookies()
 
     def test_cookies(self):
-        self.api.__del__()
-        self.api = API(auto_logout=False, persistent=True,
+        self.api = API(persistent=True,
                        cookies_filename=TEST_COOKIE_FILE)
         assert self.api.has_logged_in
 

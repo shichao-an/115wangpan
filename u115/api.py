@@ -153,20 +153,23 @@ class API(object):
     web_api_url = 'http://web.api.115.com/files'
     aps_natsort_url = 'http://aps.115.com/natsort/files.php'
 
-    def __init__(self, auto_logout=True, persistent=False,
+    def __init__(self, persistent=False,
                  cookies_filename=None, cookies_type='LWPCookieJar'):
         """
         :param bool auto_logout: whether to logout automatically when
             :class:`.API` object is destroyed
+
+                                 .. deprecated:: 0.6.0
+                                     Call :meth:`.API.logout` explicitly
+
         :param bool persistent: whether to use persistent session that stores
             cookies on disk
         :param str cookies_filename: path to the cookies file, use default
-            path (`~/.115cookies`) if none
+            path (`~/.115cookies`) if None
         :param str cookies_type: a string representing
             :class:`cookielib.FileCookieJar` subclass,
             `LWPCookieJar` (default) or `MozillaCookieJar`
         """
-        self.auto_logout = auto_logout
         self.persistent = persistent
         self.cookies_filename = cookies_filename
         self.cookies_type = cookies_type
@@ -185,13 +188,6 @@ class API(object):
         self._task_quota = None
         if self.persistent:
             self.load_cookies()
-
-    def __del__(self):
-        if self.auto_logout and self.has_logged_in:
-            self.logout()
-        if not self.auto_logout and self.has_logged_in:
-            if self.persistent:
-                self.save_cookies()
 
     def _reset_cache(self):
         self._user_id = None
