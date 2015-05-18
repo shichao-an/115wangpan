@@ -33,6 +33,21 @@ If you don't want to be prompted for password every time, :ref:`set the credenti
 
     $ 115down -d section_name
 
+Using cookies
+~~~~~~~~~~~~~
+
+You can use cookies to enable persistent session. The cookies file is ``~/.115cookies``. If this file exists, `115down` and `115up` will automatically use cookies. Otherwise, you have to save the cookies first using the ``-c`` option:
+
+::
+
+    $ 115down -d section_name -c
+    Cookies is saved.
+    $ 115down -t
+    API has logged in from cookies.
+    ...
+
+If you do not want to use cookies any more, simply remove the ``~/.115cookies`` file.
+
 Listing tasks
 ~~~~~~~~~~~~~
 

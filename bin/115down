@@ -73,6 +73,8 @@ def init_api(username, password, section):
         api._init_cookies()
         api.login(username, password, section)
         api.save_cookies()
+        print('Cookies is saved.')
+        sys.exit()
     elif os.path.exists(COOKIES_FILENAME):
         try:
             api = API(persistent=True)

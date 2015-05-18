@@ -1,5 +1,5 @@
-Quickstart
-==========
+Tutorial
+========
 
 .. _login-and-credential-file:
 
