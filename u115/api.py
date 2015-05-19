@@ -1017,6 +1017,29 @@ class BaseFile(Base):
         else:
             raise APIError('This file or directory is already deleted.')
 
+    def move(self, directory):
+        """
+        Move this file or directory to the destination directory
+        :param directory: destination directory
+        :return: whether the action is successful
+        :raise: :class:`.APIError` if something bad happened
+        """
+        fcid = None
+        pid = None
+
+        if isinstance(self, File):
+            fcid = self.fid
+        elif isinstance(self, Directory):
+            fcid = self.cid
+        else:
+            raise APIError('Invalid BaseFile instance.')
+        pid = directory.cid
+
+        if self.api._req_files_move(pid, [fcid]):
+            return True
+        else:
+            raise APIError('Error in moving file/directory.')
+
     @property
     def is_deleted(self):
         """Whether this file or directory is deleted"""
