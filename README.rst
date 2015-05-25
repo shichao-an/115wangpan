@@ -85,5 +85,5 @@ CLI commands
 
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
    :target: http://travis-ci.org/shichao-an/115wangpan
-.. |PyPI version| image:: https://pypip.in/v/115wangpan/badge.png
+.. |PyPI version| image:: https://img.shields.io/pypi/v/115wangpan.png
    :target: https://pypi.python.org/pypi/115wangpan/
