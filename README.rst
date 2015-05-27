@@ -26,7 +26,7 @@ Ubuntu:
 
 .. code-block:: bash
 
-    $ sudo apt-get install libcurl4-openssl-dev python-dev
+    $ sudo apt-get install build-essential libcurl4-openssl-dev python-dev
 
 Fedora:
 
