@@ -551,6 +551,7 @@ class API(object):
         if res.state:
             return res.content
         else:
+            print(res.content.get('error_msg'))
             raise RequestFailure('Failed to open torrent.')
 
     def _req_lixian_add_task_bt(self, t):
