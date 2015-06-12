@@ -751,14 +751,22 @@ class API(object):
             raise RequestFailure('No directory found.')
 
     def _req_files_download_url(self, pickcode):
-        url = self.web_api_url + '/download'
-        params = {'pickcode': pickcode, '_': get_timestamp(13)}
-        req = Request(method='GET', url=url, params=params)
-        res = self.http.send(req)
-        if res.state:
-            return res.content['file_url']
+        #url = self.web_api_url + '/download'
+        #params = {'pickcode': pickcode, '_': get_timestamp(13)}
+        prourl = "http://proapi.115.com/app/chrome/down?method=get_file_url&pickcode=%s"%pickcode
+        #req = Request(method='GET', url=url, params=params)
+        proreq = Request(method='GET', url=prourl)
+        #res = self.http.send(req)
+        prores = self.http.send(proreq)
+        if prores.state:
+            return prores.content['data'][prores.content['data'].keys()[0]]['url']['url']
         else:
             raise RequestFailure('Failed to get download URL.')
+
+        #if res.state:
+            #return res.content['file_url']
+        #else:
+            #raise RequestFailure('Failed to get download URL.')
 
     def _req_get_storage_info(self):
         url = 'http://115.com'
