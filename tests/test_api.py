@@ -401,7 +401,22 @@ class DownloadTests(TestCase):
         entries = downloads_directory.list()
         assert entries
         entry = entries[0]
-        entry.download(path=pjoin(DOWNLOADS_DIR))
+        entry.download(path=pjoin(DOWNLOADS_DIR), proapi=False)
+        delete_entries(entries)
+
+    def test_download_proapi(self):
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        delete_entries(entries)
+        # Upload a file
+        uploaded_file = self.api.upload(TEST_UPLOAD_FILE)
+        assert isinstance(uploaded_file, File)
+        time.sleep(5)
+        entries = downloads_directory.list()
+        assert entries
+        entry = entries[0]
+        entry.download(path=pjoin(DOWNLOADS_DIR), proapi=True)
         delete_entries(entries)
 
 

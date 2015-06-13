@@ -186,7 +186,7 @@ def download_file(f, path=None):
     Download an entry recursively to ``path``
     """
     if isinstance(f, File):
-        print(f.url)
+        print(f.get_download_url())
         if not DRY_RUN:
             f.download(path)
     elif isinstance(f, Directory):
