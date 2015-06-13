@@ -185,6 +185,7 @@ class API(object):
         self._lixian_timestamp = None
         self._root_directory = None
         self._downloads_directory = None
+        self._receiver_directory = None
         self._torrents_directory = None
         self._task_count = None
         self._task_quota = None
@@ -199,6 +200,7 @@ class API(object):
         self._lixian_timestamp = None
         self._root_directory = None
         self._downloads_directory = None
+        self._receiver_directory = None
         self._torrents_directory = None
         self._task_count = None
         self._task_quota = None
@@ -339,6 +341,13 @@ class API(object):
         if self._downloads_directory is None:
             self._load_downloads_directory()
         return self._downloads_directory
+
+    @property
+    def receiver_directory(self):
+        """Parent directory of the downloads directory"""
+        if self._receiver_directory is None:
+            self._receiver_directory = self.downloads_directory.parent
+        return self._receiver_directory
 
     @property
     def torrents_directory(self):
@@ -482,6 +491,82 @@ class API(object):
                 res.append(_instantiate_file(self, entry))
         return res
 
+    def move(self, entries, directory):
+        """
+        Move one or more entries (file or directory) to the destination
+            directory
+
+        :param list entries: a list of source entries (:class:`.BaseFile`
+            object)
+        :param directory: destination directory
+        :return: whether the action is successful
+        :raise: :class:`.APIError` if something bad happened
+        """
+        fcids = []
+        pid = None
+        for entry in entries:
+            if isinstance(entry, File):
+                fcid = entry.fid
+            elif isinstance(entry, Directory):
+                fcid = entry.cid
+            else:
+                raise APIError('Invalid BaseFile instance for an entry.')
+            fcids.append(fcid)
+        if isinstance(directory, Directory):
+            pid = directory.cid
+        else:
+            raise APIError('Invalid destination directory.')
+        if self._req_files_move(pid, fcids):
+            # Update attributes of source entries
+            for entry in entries:
+                entry.reload()
+            return True
+        else:
+            raise APIError('Error moving entries.')
+
+    def edit(self, entry, name, mark=False):
+        """
+        Edit an entry (file or directory)
+
+        :param entry: :class:`.BaseFile` object
+        :param str name: new name for the entry
+        :param bool mark: whether to bookmark the entry
+        """
+        fcid = None
+        if isinstance(entry, File):
+            fcid = entry.fid
+        elif isinstance(entry, Directory):
+            fcid = entry.cid
+        else:
+            raise APIError('Invalid BaseFile instance for an entry.')
+        is_mark = 0
+        if mark is True:
+            is_mark = 1
+        if self._req_files_edit(fcid, name, is_mark):
+            entry.reload()
+            return True
+        else:
+            raise APIError('Error editing the entry.')
+
+    def mkdir(self, parent, name):
+        """
+        Create a directory
+
+        :param parent: the parent directory
+        :param str name: the name of the new directory
+        :return: the new directory
+        :rtype: :class:`.Directory`
+
+        """
+        pid = None
+        cid = None
+        if isinstance(parent, Directory):
+            pid = parent.cid
+        else:
+            raise('Invalid Directory instance.')
+        cid = self._req_files_add(pid, name)['cid']
+        return self._load_directory(cid)
+
     def _req_offline_space(self):
         """Required before accessing lixian tasks"""
         url = 'http://115.com/'
@@ -500,6 +585,10 @@ class API(object):
             raise RequestFailure(msg)
 
     def _req_lixian_task_lists(self, page=1):
+        """
+        This request will cause the system to create a default downloads
+        directory if it does not exist
+        """
         url = 'http://115.com/lixian/'
         params = {'ct': 'lixian', 'ac': 'task_lists'}
         self._load_signatures()
@@ -689,7 +778,7 @@ class API(object):
         req = Request(method='POST', url=url, data=data)
         res = self.http.send(req)
         if res.state:
-            return res.content
+            return True
         else:
             raise RequestFailure('Failed to access files API.')
 
@@ -712,7 +801,7 @@ class API(object):
     def _req_files_move(self, pid, fids):
         """
         Move files or directories
-        :param str pid: target directory id
+        :param str pid: destination directory id
         :param list fids: a list of ids of files or directories to be moved
         """
         url = self.web_api_url + '/move'
@@ -723,7 +812,7 @@ class API(object):
         req = Request(method='POST', url=url, data=data)
         res = self.http.send(req)
         if res.state:
-            return res.content
+            return True
         else:
             raise RequestFailure('Failed to access files API.')
 
@@ -1033,30 +1122,35 @@ class BaseFile(Base):
     def move(self, directory):
         """
         Move this file or directory to the destination directory
+
         :param directory: destination directory
         :return: whether the action is successful
         :raise: :class:`.APIError` if something bad happened
         """
-        fcid = None
-        pid = None
+        self.api.move([self], directory)
 
-        if isinstance(self, File):
-            fcid = self.fid
-        elif isinstance(self, Directory):
-            fcid = self.cid
-        else:
-            raise APIError('Invalid BaseFile instance.')
-        pid = directory.cid
+    def edit(self, name, mark=False):
+        """
+        Edit this file or directory
 
-        if self.api._req_files_move(pid, [fcid]):
-            return True
-        else:
-            raise APIError('Error in moving file/directory.')
+        :param str name: new name for this entry
+        :param bool mark: whether to bookmark this entry
+        """
+        self.api.edit(self, name, mark)
 
     @property
     def is_deleted(self):
         """Whether this file or directory is deleted"""
         return self._deleted
+
+    def __eq__(self, other):
+        if isinstance(self, File):
+            if isinstance(other, File):
+                return self.fid == other.fid
+        elif isinstance(self, Directory):
+            if isinstance(other, Directory):
+                return self.cid == other.cid
+        return False
 
     def __unicode__(self):
         return self.name
@@ -1139,6 +1233,21 @@ class File(BaseFile):
         if self.is_torrent:
             return self.api._load_torrent(self)
 
+    def reload(self):
+        """
+        Reload file info and metadata
+
+        * name
+        * sha
+        * pickcode
+
+        """
+        r = self.api._req_file(self.fid)
+        data = r['data']
+        self.name = data['file_name']
+        self.sha = data['sha1']
+        self.pickcode = data['pick_code']
+
 
 class Directory(BaseFile):
     """
@@ -1218,7 +1327,8 @@ class Directory(BaseFile):
         loaded_entries = [
             entry for entry in res['data'][:count]
         ]
-        total_count = res['count']
+        #total_count = res['count']
+        total_count = self.count
         # count should never be greater than total_count
         if count > total_count:
             count = total_count
@@ -1246,6 +1356,7 @@ class Directory(BaseFile):
         """
         if self.cid is None:
             return False
+        self.reload()
         kwargs = {}
         # `cid` is the only required argument
         kwargs['cid'] = self.cid
@@ -1253,6 +1364,18 @@ class Directory(BaseFile):
         kwargs['show_dir'] = 1 if show_dir is True else 0
         kwargs['natsort'] = 1 if natsort is True else 0
         kwargs['o'] = order
+
+        # When the downloads directory exists, its parent directory's count
+        # does not include the downloads directory. This behavior is similar
+        # to the parent's parent (root).
+        # The following code fixed this behavior so that a directory's
+        # count correctly reflects the actual number of entries in it
+        # The side-effect that this code may ensure that downloads directory
+        # exists.
+
+        if self.is_root or self == self.api.receiver_directory:
+            self._count += 1
+
         if self.count <= count:
             # count should never be greater than self.count
             count = self.count
@@ -1274,6 +1397,12 @@ class Directory(BaseFile):
             else:
                 res.append(_instantiate_file(self.api, entry))
         return res
+
+    def mkdir(self, name):
+        """
+        Create a new directory in this directory
+        """
+        self.api.mkdir(self, name)
 
 
 class Task(Base):

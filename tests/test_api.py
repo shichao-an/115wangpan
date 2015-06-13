@@ -420,6 +420,39 @@ class DownloadTests(TestCase):
         delete_entries(entries)
 
 
+class FileTests(TestCase):
+    """Test file manipulation in downloads directory"""
+    def setUp(self):
+        # Initialize a new API instance
+        self.api = API()
+        self.api.login(section='test')
+
+    def test_move_files(self):
+        """Move files from downloads directory to its parent directory"""
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        delete_entries(entries)
+        uploaded_file = self.api.upload(TEST_UPLOAD_FILE)
+        assert isinstance(uploaded_file, File)
+        time.sleep(5)
+        entries = downloads_directory.list()
+        assert entries
+        entry = entries[0]
+        assert entry.fid == uploaded_file.fid
+        dest_dir = downloads_directory.parent
+        self.api.move([entry], dest_dir)
+        old_entry = entry
+        assert old_entry.cid == dest_dir.cid
+        for entry in dest_dir.list():
+            if isinstance(entry, File):
+                assert entry.fid == old_entry.fid
+                entry.delete()
+                break
+        else:
+            assert False
+
+
 class AuthTests(TestCase):
     """
     Test login and logout
