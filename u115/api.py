@@ -147,11 +147,13 @@ class API(object):
     :cvar int num_tasks_per_page: default number of tasks per page/request
     :cvar str web_api_url: files API url
     :cvar str aps_natsort_url: natural sort files API url
+    :cvar str proapi_url: pro API url for downloads
     """
 
     num_tasks_per_page = 30
     web_api_url = 'http://web.api.115.com/files'
     aps_natsort_url = 'http://aps.115.com/natsort/files.php'
+    proapi_url = 'http://proapi.115.com/app/chrome/down'
 
     def __init__(self, persistent=False,
                  cookies_filename=None, cookies_type='LWPCookieJar'):
@@ -441,7 +443,7 @@ class API(object):
         return _instantiate_uploaded_file(self, data2)
 
     def download(self, obj, path=None, show_progress=True, resume=True,
-                 auto_retry=True):
+                 auto_retry=True, proapi=False):
         """
         Download a file
 
@@ -452,8 +454,10 @@ class API(object):
             identified by filename
         :param bool auto_retry: whether to retry automatically upon closed
             transfer until the file's download is finished
+        :param bool proapi: whether to use pro API
         """
-        download(obj.url, path=path, session=self.http.session,
+        url = obj.get_download_url(proapi)
+        download(url, path=path, session=self.http.session,
                  show_progress=show_progress, resume=resume,
                  auto_retry=auto_retry)
 
@@ -750,13 +754,21 @@ class API(object):
         else:
             raise RequestFailure('No directory found.')
 
-    def _req_files_download_url(self, pickcode):
-        url = self.web_api_url + '/download'
-        params = {'pickcode': pickcode, '_': get_timestamp(13)}
+    def _req_files_download_url(self, pickcode, proapi=False):
+        if not proapi:
+            url = self.web_api_url + '/download'
+            params = {'pickcode': pickcode, '_': get_timestamp(13)}
+        else:
+            url = self.proapi_url
+            params = {'pickcode': pickcode, 'method': 'get_file_url'}
         req = Request(method='GET', url=url, params=params)
         res = self.http.send(req)
         if res.state:
-            return res.content['file_url']
+            if not proapi:
+                return res.content['file_url']
+            else:
+                fid = res.content['data'].keys()[0]
+                return res.content['data'][fid]['url']['url']
         else:
             raise RequestFailure('Failed to get download URL.')
 
@@ -1089,22 +1101,28 @@ class File(BaseFile):
             self._directory = self.api._load_directory(self.cid)
         return self._directory
 
-    def get_download_url(self):
-        """Get this file's download URL"""
+    def get_download_url(self, proapi=False):
+        """
+        Get this file's download URL
+
+        :param bool proapi: whether to use pro API
+
+        """
         if self._download_url is None:
             self._download_url = \
-                self.api._req_files_download_url(self.pickcode)
+                self.api._req_files_download_url(self.pickcode, proapi)
         return self._download_url
 
     @property
     def url(self):
-        """Alias for :meth:`.File.get_download_url`"""
+        """Alias for :meth:`.File.get_download_url` with `proapi=False`"""
         return self.get_download_url()
 
     def download(self, path=None, show_progress=True, resume=True,
-                 auto_retry=True):
+                 auto_retry=True, proapi=False):
         """Download this file"""
-        self.api.download(self, path, show_progress, resume, auto_retry)
+        self.api.download(self, path, show_progress, resume, auto_retry,
+                          proapi)
 
     @property
     def is_torrent(self):
