@@ -1,0 +1,341 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import argparse
+import getpass
+import re
+import os
+import sys
+from u115 import API, File, Directory, Task
+from u115 import __version__ as VERSION
+from u115.utils import mkdir_p, eval_path, PY3
+from u115.conf import COOKIES_FILENAME
+from u115 import conf
+from homura import download
+
+if PY3:
+    from http import cookiejar as cookielib
+else:
+    import cookielib
+
+
+# SOCKS proxy
+if os.environ.get('PROXY_ADDR'):
+    proxy_addr = os.environ.get('PROXY_ADDR')
+    proxy_port = int(os.environ.get('PROXY_PORT'))
+    import socket
+    import socks
+    socks.set_default_proxy(socks.SOCKS5, proxy_addr, proxy_port)
+    socket.socket = socks.socksocket
+
+
+DRY_RUN = False
+FLAT = False
+SAVE_COOKIES = False
+CLI_API = None
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(prog='115')
+    parser.add_argument('-c', '--cookies', action='store_true',
+                        help="log in and save cookies to ~/.115cookies")
+    parser.add_argument('-v', '--version', action='store_true', default=False,
+                        help="print version and exit")
+    parser.add_argument('-i', '--info', action='store_true', default=False,
+                        help="print account information")
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('-u', '--username', help='account or username')
+    group.add_argument('-d', '--section', default='default',
+                       help='section name in credential file')
+    subparsers = parser.add_subparsers(dest='subparser_name')
+    pd = subparsers.add_parser('down')
+    pu = subparsers.add_parser('up')
+    pd.add_argument('-f', '--flat', action='store_true',
+                    help="flatten directory structure")
+    pd.add_argument('entry_num', nargs='?', help='entry number',
+                    type=int)
+    pd.add_argument(
+        'sub_num', nargs='?',
+        help='sub-entry number(s) or range (e.g. 1,2,4-6); star (*) for all')
+    pd.add_argument('-t', '--tasks', action='store_true',
+                    help="list tasks")
+    pd.add_argument('-l', '--list', action='store_true', default=True,
+                    help="list the downloads directory")
+    pd.add_argument('-n', '--count', default=30, type=int,
+                    help="number of entries to get")
+    pd.add_argument('-m', '--sub-count', default=0, type=int,
+                    dest='sub_count',
+                    help="number of sub-entries to get (defaults to all)")
+    pd.add_argument('-s', '--dry-run', action='store_true',
+                    help="print urls instead of downloading")
+    group1 = pu.add_mutually_exclusive_group(required=True)
+    group1.add_argument('-l', '--link',
+                        help="link resource (HTTP, FTP, eD2k or Magnet)")
+    group1.add_argument('-t', '--torrent',
+                        help="torrent file")
+    group1.add_argument('-v', '--version', action='store_true', default=False,
+                        help="print version and exit")
+    args = parser.parse_args()
+    if args.subparser_name == 'down':
+        if args.entry_num is not None:
+            if args.tasks is True:
+                raise parser.error('Cannot list entries of tasks.')
+            if args.entry_num <= 0:
+                msg = 'Entry number must be a positive integer.'
+                raise parser.error(msg)
+        if args.sub_num is not None:
+            args.sub_num = parse_sub_num(args.sub_num, parser)
+    return args
+
+
+def init_api(username, password, section):
+    """Initialize API and authenticate via cookies or credentials"""
+    if SAVE_COOKIES is True:
+        api = API()
+        api._init_cookies()
+        api.login(username, password, section)
+        api.save_cookies()
+        print('Cookies is saved.')
+        sys.exit()
+    elif os.path.exists(COOKIES_FILENAME):
+        try:
+            api = API(persistent=True)
+        except cookielib.LoadError:
+            print('Cannot read cookies from %s. ' % COOKIES_FILENAME)
+            print('Use -c option to save cookies and try again.')
+            sys.exit(2)
+        if api.has_logged_in:
+            print('API has logged in from cookies.')
+        else:
+            print('API fails to log in from cookies.')
+            print('Use -c option to save cookies and try again.')
+            sys.exit(1)
+    else:
+        api = API()
+        if api.login(username, password, section):
+            print('Login success.')
+    return api
+
+
+def get_entries(entry_num, sub_num,
+                count, sub_count, list_tasks=False):
+    api = CLI_API
+    if list_tasks is True:
+        entries = api.get_tasks(count)
+    else:
+        entries = api.downloads_directory.list(count)
+    # List all entries
+    if entry_num is None:
+        for k, entry in enumerate(entries, start=1):
+            if list_tasks:
+                print_entry(entry, num=k)
+            else:
+                print_entry(entry, num=k)
+    # List the specified entry
+    elif entry_num is not None and sub_num is None:
+        entry = entries[entry_num - 1]
+        # entry may be a File object
+        if isinstance(entry, File):
+            download_file(entry)
+        else:
+            # Directory object
+            if sub_count == 0:
+                sub_count = entry.count
+            list_entry(entry, sub_count)
+    # Download the specified sub-entry
+    elif entry_num is not None and sub_num is not None:
+        entry = entries[entry_num - 1]
+        print(repr(entry))
+        # entry may be a File object
+        if isinstance(entry, File):
+            download_file(entry)
+            return
+        # Directory object
+        if sub_count == 0:
+            sub_count = entry.count
+        subs = entry.list(sub_count)
+        directory = None
+        if not FLAT:
+            directory = entry.name
+            if DRY_RUN:
+                print('DRY RUN: creating directory "%s"...' % directory)
+            else:
+                mkdir_p(directory)
+        if sub_num == '*':
+            for k, f in enumerate(subs, start=1):
+                print_entry(f, num=k)
+                download_file(f, directory)
+        else:
+            # sub_num is a set of integers
+            nums = sub_num
+            for num in nums:
+                f = subs[num - 1]
+                print_entry(f, num=num)
+                download_file(f, directory)
+
+
+def print_entry(entry, prefix=None, num=None):
+    size_human = None
+    status_human = None
+    if isinstance(entry, File):
+        size_human = entry.size_human
+    elif isinstance(entry, Task):
+        size_human = entry.size_human
+        status_human = entry.status_human
+    args = []
+    if prefix is not None:
+        args.append(prefix)
+    if num is not None:
+        args.append(num)
+    if status_human is not None:
+        args.append('[%s]' % status_human)
+    if size_human is not None:
+        args.append('[%s]' % size_human)
+    args.append(repr(entry))
+    print(*args)
+
+
+def list_entry(entry, sub_count):
+    """List a directory"""
+    actual_count = entry.count if sub_count > entry.count else sub_count
+    stat = '(%d out of %d)' % (actual_count, entry.count)
+    print(repr(entry), stat)
+    for k, f in enumerate(entry.list(sub_count), start=1):
+        print_entry(f, prefix='\t', num=k)
+
+
+def download_file(f, path=None):
+    """
+    Download an entry recursively to ``path``
+    """
+    if isinstance(f, File):
+        print(f.get_download_url())
+        if not DRY_RUN:
+            f.download(path)
+    elif isinstance(f, Directory):
+        dpath = None
+        if not FLAT:
+            if path is None:
+                dpath = f.name
+            else:
+                dpath = os.path.join(path, f.name)
+            if DRY_RUN:
+                print('DRY RUN: creating directory "%s"...' % dpath)
+            else:
+                mkdir_p(dpath)
+        # Here we list all entries (f.count)
+        ffs = f.list(f.count)
+        for ff in ffs:
+            print(ff)
+            download_file(ff, dpath)
+
+
+def parse_sub_num(s, parser):
+    """
+    Parse sub_num
+    Return a string '*' or a set of integers
+    """
+    s = s.strip()
+    if s == '*':
+        return s
+    nums = s.split(',')
+    msg = 'Invalid sub-entry number.'
+    res = set()
+    for num in nums:
+        num = num.strip()
+        if num.isdigit():
+            try:
+                num = int(num)
+                assert num > 0
+                res.add(num)
+            except:
+                raise parser.error(msg)
+        else:
+            try:
+                m = re.search('(\d+)-(\d+)', num)
+                if m is None:
+                    raise parser.error(msg)
+                else:
+                    a = int(m.group(1))
+                    b = int(m.group(2))
+                    assert a > 0
+                    assert b > 0
+                    assert a <= b
+                    r = range(a, b + 1)
+                    res.update(r)
+            except:
+                raise parser.error(msg)
+    res = list(res)
+    res.sort()
+    return res
+
+
+def add_new_task(args):
+    api = CLI_API
+    if args.torrent is not None:
+        r = api.add_task_bt(args.torrent)
+    elif args.link is not None:
+        r = api.add_task_url(args.link)
+    if r:
+        print('Task is successfully created.')
+    tasks = api.get_tasks()
+    t1 = tasks[0]
+    print(t1, t1.status_human)
+
+
+def get_account_info():
+    api = CLI_API
+    storage = api.get_storage_info(human=True)
+    info = {
+        'username': api.username,
+        'user_id': api.user_id,
+        'used_storage': storage['used'],
+        'total_storage': storage['total'],
+        'task_count': api.task_count,
+        'task_quota': api.task_quota,
+    }
+    fmt = """
+Username: %(username)s
+User ID: %(user_id)s
+Used storage: %(used_storage)s
+Total storage: %(total_storage)s
+Task count: %(task_count)d
+Task quota: %(task_quota)d
+"""
+    return fmt % info
+
+
+def main():
+    args = parse_args()
+
+    global SAVE_COOKIES
+    global CLI_API
+
+    if args.version:
+        print(VERSION)
+        sys.exit()
+
+    password = None
+    if args.username is not None:
+        password = getpass.getpass()
+
+    SAVE_COOKIES = args.cookies
+    CLI_API = init_api(args.username, password, args.section)
+
+    if args.info:
+        print(get_account_info())
+        sys.exit()
+
+    if args.subparser_name == 'down':
+        global DRY_RUN
+        global FLAT
+        DRY_RUN = args.dry_run
+        FLAT = args.flat
+        get_entries(args.entry_num, args.sub_num, args.count, args.sub_count,
+                    args.tasks)
+    elif args.subparser_name == 'up':
+        add_new_task(args)
+
+
+if __name__ == '__main__':
+    main()

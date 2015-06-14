@@ -936,7 +936,7 @@ class API(object):
             if 'errno' in res.content:
                 if res.content['errno'] == 990005:
                     raise JobError()
-            print(res.content['error'])
+            self.logger.error(res.content['error'])
             raise APIError(msg)
 
     def _req_get_user_aq(self):
