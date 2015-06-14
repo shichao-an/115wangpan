@@ -3,7 +3,7 @@
 
 |Build| |PyPI version|
 
-115 Wangpan (115网盘 or 115云) is an unofficial Python API and SDK for 115.com. Supported Python verisons are 2.6, 2.7 and 3.3.
+115 Wangpan (115网盘 or 115云) is an unofficial Python API and SDK for 115.com. Supported Python verisons are 2.6, 2.7, 3.3, 3.4.
 
 * Documentation: http://115wangpan.readthedocs.org
 * GitHub: https://github.com/shichao-an/115wangpan
@@ -15,7 +15,7 @@ Features
 * Authentication
 * Persistent session
 * Tasks management: BitTorrent and links
-* Files management: uploading, downloading and searching
+* Files management: uploading, downloading, searching, and editing
 
 Installation
 ------------

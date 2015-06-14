@@ -172,9 +172,11 @@ The account has its offline space that stores files transferred from tasks or up
     <Directory: 文件>
     >>> api.root_directory.list()
     [<Directory: 我的接收>]
+    >>> api.receiver_directory
+    <Directory: 我的接收>
 
 
-After your tasks are transferred, the files go to the downloads directory (:attr:`u115.API.downloads_directory`).
+After your tasks are transferred, the files go to the downloads directory (:attr:`u115.API.downloads_directory`). Its parent directory is the receiver directory (:attr:`u115.API.receiver_directory`)
 
 .. code-block:: python
 
@@ -325,7 +327,55 @@ The file you upload can be a torrent file, which you can open later and create a
     True
     >>> t = u.open_torrent()
     >>> t.submit()
-    
+
+
+Moving files and directories
+----------------------------
+
+You can move files and directories within your offline space:
+
+.. code-block:: python
+
+    >>> files = api.downloads_directory.list()
+    >>> files
+    [<File: photo.jpg>, <Directory: album>]
+    >>> photo, album = files[0], files[1]
+    >>> photo
+    <File: photo.jpg>
+    >>> album
+    <Directory: album>
+    >>> photo.move(album)
+    >>> photo.directory
+    <Directory: album>
+    >>> album.list()
+    [<File: photo.jpg>]
+
+Creating directories
+--------------------
+
+You can create directories within your offline space:
+
+.. code-block:: python
+
+    >>> api.downloads_directory.list()
+    [<File: photo.jpg>]
+    >>> api.downloads_directory.mkdir('New Dir')
+    >>> api.downloads_directory.list()
+    [<Directory: New Dir>, <File: photo.jpg>]
+
+
+Renaming files and diretories
+-----------------------------
+
+You can rename files and directories:
+
+.. code-block:: python
+
+    >>> f1
+    <File: photo.jpg>
+    >>> f1.edit('good.jpg')
+    >>> f1
+    <File: good.jpg>
 
 Account and storage info
 ------------------------

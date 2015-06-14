@@ -16,7 +16,7 @@ CLI Commands
 Authentication
 ~~~~~~~~~~~~~~
 
-``115`` needs to be authenticated every time it is invoked. You can pass username to ``-u`` option, and you will be prompted for password without echoing.
+``115`` needs to be authenticated every time it is invoked. You can pass username to ``-u`` option, and you will be prompted for password without echoing. Note that if cookies is enabled (discussed in the next section), it will bypass any specified username (``-u yourname``) or section (``-d section``) and use the cookies instead.
 
 ::
 
@@ -72,6 +72,7 @@ Debug mode
 ``-D`` can enable debug by setting the effective log level to DEBUG:
 
 ::
+
     $ 115 -D -i
     DEBUG:API:_debug: 
        TYPE: Response
@@ -87,6 +88,7 @@ Debug mode
     METHOD: GET
     PARAMS: {'ac': 'get_storage_info', '_': '12345678', 'ct': 'ajax'}
     ...
+
 
 Print help
 ~~~~~~~~~~
