@@ -2,7 +2,9 @@
 from __future__ import print_function, absolute_import
 
 import humanize
+import inspect
 import json
+import logging
 import os
 import re
 import requests
@@ -93,7 +95,8 @@ class RequestHandler(object):
             except ValueError:
                 # No JSON-encoded data returned
                 if expect_json:
-                    print(r.content)
+                    logger = logging.getLogger(conf.LOGGING_API_LOGGER)
+                    logger.debug(r.content)
                     raise InvalidAPIAccess('Invalid API access.')
                 return Response(False, r.content)
         else:
@@ -122,6 +125,16 @@ class Request(object):
         self.data = data
         self.files = files
         self.headers = headers
+        self._debug()
+
+    def _debug(self):
+        logger = logging.getLogger(conf.LOGGING_API_LOGGER)
+        level = logger.getEffectiveLevel()
+        if level == logging.DEBUG:
+            func = inspect.stack()[2][3]
+            msg = conf.DEBUG_REQ_FMT % (func, self.url, self.method,
+                                        self.params, self.data)
+            logger.debug(msg)
 
 
 class Response(object):
@@ -135,6 +148,15 @@ class Response(object):
     def __init__(self, state, content):
         self.state = state
         self.content = content
+        self._debug()
+
+    def _debug(self):
+        logger = logging.getLogger(conf.LOGGING_API_LOGGER)
+        level = logger.getEffectiveLevel()
+        if level == logging.DEBUG:
+            func = inspect.stack()[4][3]
+            msg = conf.DEBUG_RES_FMT % (func, self.state, self.content)
+            logger.debug(msg)
 
 
 class API(object):
@@ -177,6 +199,7 @@ class API(object):
         self.cookies_type = cookies_type
         self.passport = None
         self.http = RequestHandler()
+        self.logger = logging.getLogger(conf.LOGGING_API_LOGGER)
         # Cache attributes to decrease API hits
         self._user_id = None
         self._username = None
@@ -642,7 +665,8 @@ class API(object):
         if res.state:
             return res.content
         else:
-            print(res.content.get('error_msg'))
+            msg = res.content.get('error_msg')
+            self.logger.error(msg)
             raise RequestFailure('Failed to open torrent.')
 
     def _req_lixian_add_task_bt(self, t):
@@ -668,7 +692,8 @@ class API(object):
         if res.state:
             return True
         else:
-            print(res.content.get('error_msg'))
+            msg = res.content.get('error_msg')
+            self.logger.error(msg)
             raise RequestFailure('Failed to create new task.')
 
     def _req_lixian_add_task_url(self, target_url):
@@ -687,7 +712,8 @@ class API(object):
         if res.state:
             return True
         else:
-            print(res.content.get('error_msg'))
+            msg = res.content.get('error_msg')
+            self.logger.error(msg)
             raise RequestFailure('Failed to create new task.')
 
     def _req_lixian_task_del(self, t):

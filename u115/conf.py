@@ -6,6 +6,7 @@ try:
 except ImportError:
     import ConfigParser as configparser
 import os
+import logging
 from u115.utils import pjoin, eval_path
 
 _d = os.path.dirname(__file__)
@@ -16,12 +17,39 @@ USER_CREDENTIALS = pjoin(user_dir, '.115')
 CREDENTIALS = None
 COOKIES_FILENAME = pjoin(user_dir, '.115cookies')
 
+LOGGING_API_LOGGER = 'API'
+LOGGING_FORMAT = "%(levelname)s:%(name)s:%(funcName)s: %(message)s"
+LOGGING_LEVEL = logging.ERROR
+DEBUG_REQ_FMT = """
+  TYPE: Request
+  FUNC: %s
+   URL: %s
+METHOD: %s
+PARAMS: %s
+  DATA: %s
+"""
+
+DEBUG_RES_FMT = """
+   TYPE: Response
+   FUNC: %s
+  STATE: %s
+CONTENT: %s
+"""
+
+# Initialize logger
+logger = logging.getLogger(LOGGING_API_LOGGER)
+handler = logging.StreamHandler()
+formatter = logging.Formatter(LOGGING_FORMAT)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(LOGGING_LEVEL)
+
 if os.path.exists(PROJECT_CREDENTIALS):
     CREDENTIALS = PROJECT_CREDENTIALS
 elif os.path.exists(USER_CREDENTIALS):
     CREDENTIALS = USER_CREDENTIALS
 
-config = configparser.ConfigParser()
+CONFIG = configparser.ConfigParser()
 
 
 def get_credential(section='default'):
@@ -32,9 +60,9 @@ def get_credential(section='default'):
             msg = 'No credentials environment variables found.'
             raise ConfigError(msg)
     elif CREDENTIALS is not None:
-        config.read(CREDENTIALS)
-        if config.has_section(section):
-            items = dict(config.items(section))
+        CONFIG.read(CREDENTIALS)
+        if CONFIG.has_section(section):
+            items = dict(CONFIG.items(section))
             try:
                 username = items['username']
                 password = items['password']
