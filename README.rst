@@ -80,8 +80,8 @@ Usage
 CLI commands 
 ------------
 
-* 115down: for downloading files
-* 115up: for creating tasks from torrents and links
+* 115 down: for downloading files
+* 115 up: for creating tasks from torrents and links
 
 .. |Build| image:: https://api.travis-ci.org/shichao-an/115wangpan.png?branch=master
    :target: http://travis-ci.org/shichao-an/115wangpan
