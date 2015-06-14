@@ -517,7 +517,7 @@ class API(object):
     def move(self, entries, directory):
         """
         Move one or more entries (file or directory) to the destination
-            directory
+        directory
 
         :param list entries: a list of source entries (:class:`.BaseFile`
             object)

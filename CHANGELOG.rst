@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.7.0 (2015-06-14)
+------------------
+
+- Added public methods: move, edit, mkdir (#13, #19)
+- Added Pro API support for getting download URL (#21)
+- Added ``receiver_directory``
+- Added logging utility and debugging hooks (#22)
+- Combined 115down and 115up into a single 115 commands
+- Supported Python 3.4 by removing ``__del__``
+
 0.6.0 (2015-05-17)
 ------------------
 
