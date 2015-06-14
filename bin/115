@@ -3,6 +3,7 @@
 from __future__ import print_function
 import argparse
 import getpass
+import logging
 import re
 import os
 import sys
@@ -37,6 +38,8 @@ CLI_API = None
 
 def parse_args():
     parser = argparse.ArgumentParser(prog='115')
+    parser.add_argument('-D', '--debug', action='store_true',
+                        help="enable debug")
     parser.add_argument('-c', '--cookies', action='store_true',
                         help="log in and save cookies to ~/.115cookies")
     parser.add_argument('-v', '--version', action='store_true', default=False,
@@ -305,8 +308,16 @@ Task quota: %(task_quota)d
     return fmt % info
 
 
+def enable_debug():
+    logger = logging.getLogger(conf.LOGGING_API_LOGGER)
+    logger.setLevel(logging.DEBUG)
+
+
 def main():
     args = parse_args()
+
+    if args.debug:
+        enable_debug()
 
     global SAVE_COOKIES
     global CLI_API
