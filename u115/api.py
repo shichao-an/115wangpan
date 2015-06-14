@@ -177,7 +177,7 @@ class API(object):
         self.cookies_type = cookies_type
         self.passport = None
         self.http = RequestHandler()
-        # Cached variabled to decrease API hits
+        # Cache attributes to decrease API hits
         self._user_id = None
         self._username = None
         self._signatures = {}
@@ -503,7 +503,6 @@ class API(object):
         :raise: :class:`.APIError` if something bad happened
         """
         fcids = []
-        pid = None
         for entry in entries:
             if isinstance(entry, File):
                 fcid = entry.fid
@@ -512,13 +511,12 @@ class API(object):
             else:
                 raise APIError('Invalid BaseFile instance for an entry.')
             fcids.append(fcid)
-        if isinstance(directory, Directory):
-            pid = directory.cid
-        else:
+        if not isinstance(directory, Directory):
             raise APIError('Invalid destination directory.')
-        if self._req_files_move(pid, fcids):
-            # Update attributes of source entries
+        if self._req_files_move(directory.cid, fcids):
             for entry in entries:
+                if isinstance(entry, File):
+                    entry.cid = directory.cid
                 entry.reload()
             return True
         else:
@@ -1152,6 +1150,9 @@ class BaseFile(Base):
                 return self.cid == other.cid
         return False
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __unicode__(self):
         return self.name
 
@@ -1242,8 +1243,8 @@ class File(BaseFile):
         * pickcode
 
         """
-        r = self.api._req_file(self.fid)
-        data = r['data']
+        res = self.api._req_file(self.fid)
+        data = res['data'][0]
         self.name = data['file_name']
         self.sha = data['sha1']
         self.pickcode = data['pick_code']

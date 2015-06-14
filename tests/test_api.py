@@ -58,6 +58,8 @@ TEST_UPLOAD_FILE = pjoin(DATA_DIR, '5781687.png')
 TEST_COOKIE_FILE = pjoin(DATA_DIR, '115cookies')
 TEST_DOWNLOAD_FILE = pjoin(DOWNLOADS_DIR, '5781687.png')
 TASK_TRANSFERRED_TIMEOUT = 60
+TEST_NEW_DIRNAME = 'New Directory'
+TEST_EDIT_FILENAME = '5781687_modified.png'
 
 
 def delete_entries(entries):
@@ -441,16 +443,62 @@ class FileTests(TestCase):
         entry = entries[0]
         assert entry.fid == uploaded_file.fid
         dest_dir = downloads_directory.parent
-        self.api.move([entry], dest_dir)
+        assert self.api.move([entry], dest_dir)
         old_entry = entry
         assert old_entry.cid == dest_dir.cid
         for entry in dest_dir.list():
             if isinstance(entry, File):
                 assert entry.fid == old_entry.fid
-                entry.delete()
                 break
         else:
             assert False
+        # Test moving directories
+        dir1 = self.api.mkdir(downloads_directory, TEST_EDIT_FILENAME)
+        assert self.api.move([dir1], dest_dir)
+        old_dir1 = dir1
+        assert old_dir1.pid == dest_dir.cid
+        for entry in dest_dir.list():
+            if isinstance(entry, Directory):
+                if entry != downloads_directory:
+                    assert entry == old_dir1
+                    break
+        else:
+            assert False
+        entries = [
+            entry for entry in dest_dir.list()
+            if entry != downloads_directory
+        ]
+        delete_entries(entries)
+
+    def test_edit_files(self):
+        """Move files from downloads directory to its parent directory"""
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        delete_entries(entries)
+        uploaded_file = self.api.upload(TEST_UPLOAD_FILE)
+        assert isinstance(uploaded_file, File)
+        time.sleep(5)
+        entries = downloads_directory.list()
+        assert entries
+        entry = entries[0]
+        assert entry.fid == uploaded_file.fid
+        assert self.api.edit(entry, TEST_EDIT_FILENAME)
+        edited_entry = downloads_directory.list()[0]
+        assert edited_entry.name == TEST_EDIT_FILENAME
+
+    def test_mkdir(self):
+        # Clean up all files in the downloads directory
+        downloads_directory = self.api.downloads_directory
+        entries = downloads_directory.list()
+        delete_entries(entries)
+        new_dir = self.api.mkdir(downloads_directory, TEST_NEW_DIRNAME)
+        assert new_dir.name == TEST_NEW_DIRNAME
+        assert new_dir.parent == downloads_directory
+        new_dir2 = downloads_directory.list()[0]
+        assert new_dir2 == new_dir
+        entries = downloads_directory.list()
+        delete_entries(entries)
 
 
 class AuthTests(TestCase):
