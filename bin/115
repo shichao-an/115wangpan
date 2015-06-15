@@ -36,21 +36,30 @@ SAVE_COOKIES = False
 CLI_API = None
 
 
+def fix_argv():
+    """Fix sys.argv due to http://bugs.python.org/issue9253"""
+    argv = set(sys.argv[1:])
+    if 'down' not in argv and 'up' not in argv:
+        sys.argv.append('__nop')
+
+
 def parse_args():
     parser = argparse.ArgumentParser(prog='115')
     parser.add_argument('-D', '--debug', action='store_true',
                         help="enable debug")
     parser.add_argument('-c', '--cookies', action='store_true',
                         help="log in and save cookies to ~/.115cookies")
-    parser.add_argument('-v', '--version', action='store_true', default=False,
+    parser.add_argument('-v', '--version', action='version', version=VERSION,
                         help="print version and exit")
     parser.add_argument('-i', '--info', action='store_true', default=False,
-                        help="print account information")
+                        help="print account information and exit")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-u', '--username', help='account or username')
     group.add_argument('-d', '--section', default='default',
                        help='section name in credential file')
-    subparsers = parser.add_subparsers(dest='subparser_name')
+    subparsers = parser.add_subparsers(dest='subparser_name',
+                                       metavar='{down,up}')
+    pn = subparsers.add_parser('__nop')
     pd = subparsers.add_parser('down')
     pu = subparsers.add_parser('up')
     pd.add_argument('-f', '--flat', action='store_true',
@@ -314,6 +323,7 @@ def enable_debug():
 
 
 def main():
+    fix_argv()
     args = parse_args()
 
     if args.debug:
@@ -321,10 +331,6 @@ def main():
 
     global SAVE_COOKIES
     global CLI_API
-
-    if args.version:
-        print(VERSION)
-        sys.exit()
 
     password = None
     if args.username is not None:

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.1 (2015-06-15)
+------------------
+
+- Fixed argparse's required subparser behavior in Python 2.7 (http://bugs.python.org/issue9253)
+
 0.7.0 (2015-06-14)
 ------------------
 
