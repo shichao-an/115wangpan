@@ -1392,13 +1392,16 @@ class Directory(BaseFile):
         kwargs['natsort'] = 1 if natsort is True else 0
         kwargs['o'] = order
 
-        # When the downloads directory exists, its parent directory's count
-        # does not include the downloads directory. This behavior is similar
-        # to the parent's parent (root).
+        # When the downloads directory exists along with its parent directory,
+        # the receiver directory, its parent's count (receiver directory's
+        # count) does not include the downloads directory. This behavior is
+        # similar to its parent's parent (root), the count of which does not
+        # include the receiver directory.
         # The following code fixed this behavior so that a directory's
         # count correctly reflects the actual number of entries in it
         # The side-effect that this code may ensure that downloads directory
-        # exists.
+        # exists, causing the system to create the receiver directory and
+        # downloads directory, if they do not exist.
 
         if self.is_root or self == self.api.receiver_directory:
             self._count += 1
