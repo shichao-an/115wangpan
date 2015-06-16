@@ -78,7 +78,8 @@ class RequestHandler(object):
                                  url=request.url,
                                  params=request.params,
                                  data=request.data,
-                                 files=request.files)
+                                 files=request.files,
+                                 headers=request.headers)
         return self._response_parser(r)
 
     def _response_parser(self, r, expect_json=True):
@@ -176,6 +177,7 @@ class API(object):
     web_api_url = 'http://web.api.115.com/files'
     aps_natsort_url = 'http://aps.115.com/natsort/files.php'
     proapi_url = 'http://proapi.115.com/app/chrome/down'
+    referer_url = 'http://115.com'
 
     def __init__(self, persistent=False,
                  cookies_filename=None, cookies_type='LWPCookieJar'):
@@ -874,7 +876,9 @@ class API(object):
         else:
             url = self.proapi_url
             params = {'pickcode': pickcode, 'method': 'get_file_url'}
-        req = Request(method='GET', url=url, params=params)
+        headers = {'Referer': self.referer_url}
+        req = Request(method='GET', url=url, params=params,
+                      headers=headers)
         res = self.http.send(req)
         if res.state:
             if not proapi:
