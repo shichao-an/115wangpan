@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 from u115.api import (API, Passport, RequestHandler, Request, Response,
                       RequestsLWPCookieJar, RequestsMozillaCookieJar,
                       Torrent, Task, TorrentFile, File, Directory,
