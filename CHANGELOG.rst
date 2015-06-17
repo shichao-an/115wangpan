@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.3 (2015-06-16)
+------------------
+
+- Fixed previous broken release that does not contain CLI command 115
+
 0.7.2 (2015-06-16)
 ------------------
 
