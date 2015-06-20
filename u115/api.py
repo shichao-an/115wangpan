@@ -67,12 +67,16 @@ class RequestHandler(object):
         r = self.session.post(url, data=data, params=params)
         return self._response_parser(r, expect_json=False)
 
-    def send(self, request):
+    def send(self, request, expect_json=True, ignore_content=False):
         """
         Send a formatted API request
 
         :param request: a formatted request object
         :type request: :class:`.Request`
+        :param bool expect_json: if True, raise :class`.InvalidAPIAccess` if
+            response is not in JSON format
+        :param bool ignore_content: whether to ignore setting content of the
+            Response object
         """
         r = self.session.request(method=request.method,
                                  url=request.url,
@@ -80,14 +84,16 @@ class RequestHandler(object):
                                  data=request.data,
                                  files=request.files,
                                  headers=request.headers)
-        return self._response_parser(r)
+        return self._response_parser(r, expect_json, ignore_content)
 
-    def _response_parser(self, r, expect_json=True):
+    def _response_parser(self, r, expect_json=True, ignore_content=False):
         """
         :param :class:`requests.Response` r: a response object of the Requests
             library
         :param bool expect_json: if True, raise :class`.InvalidAPIAccess` if
             response is not in JSON format
+        :param bool ignore_content: whether to ignore setting content of the
+            Response object
         """
         if r.ok:
             try:
@@ -97,9 +103,14 @@ class RequestHandler(object):
                 # No JSON-encoded data returned
                 if expect_json:
                     logger = logging.getLogger(conf.LOGGING_API_LOGGER)
-                    logger.debug(r.content)
+                    logger.debug(r.text)
                     raise InvalidAPIAccess('Invalid API access.')
-                return Response(False, r.content)
+                # Raw response
+                if ignore_content:
+                    res = Response(True, None)
+                else:
+                    res = Response(True, r.text)
+                return res
         else:
             r.raise_for_status()
 
@@ -736,6 +747,17 @@ class API(object):
         else:
             raise RequestFailure('Failed to delete the task.')
 
+    def _req_file_userfile(self):
+
+        url = 'http://115.com/?ct=file&ac=userfile&is_wl_tpl=1'
+        params = {
+            'ct': 'file',
+            'ac': 'userfile',
+            'is_wl_tpl': 1,
+        }
+        req = Request(method='GET', url=url, params=params)
+        self.http.send(req, expect_json=False, ignore_content=True)
+
     def _req_aps_natsort_files(self, cid, offset, limit, o='file_name',
                                asc=1, aid=1, show_dir=1, code=None, scid=None,
                                snap=0, natsort=1, source=None, type=0,
@@ -870,13 +892,17 @@ class API(object):
             raise RequestFailure('No directory found.')
 
     def _req_files_download_url(self, pickcode, proapi=False):
+        if '_115_curtime' not in self.cookies:
+            self._req_file_userfile()
         if not proapi:
             url = self.web_api_url + '/download'
             params = {'pickcode': pickcode, '_': get_timestamp(13)}
         else:
             url = self.proapi_url
             params = {'pickcode': pickcode, 'method': 'get_file_url'}
-        headers = {'Referer': self.referer_url}
+        headers = {
+            'Referer': self.referer_url,
+        }
         req = Request(method='GET', url=url, params=params,
                       headers=headers)
         res = self.http.send(req)
