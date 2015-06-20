@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='115wangpan',
-    version='0.7.3',
+    version='0.7.4',
     description="Unofficial Python API wrapper for 115.com",
     long_description=open('README.rst').read(),
     keywords='115 wangpan pan cloud lixian',

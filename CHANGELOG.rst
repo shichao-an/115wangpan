@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.4 (2015-06-20)
+------------------
+
+- Fixed getting download URL error due to another API change (#23)
+
 0.7.3 (2015-06-16)
 ------------------
 
