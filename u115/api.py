@@ -749,7 +749,7 @@ class API(object):
 
     def _req_file_userfile(self):
 
-        url = 'http://115.com/?ct=file&ac=userfile&is_wl_tpl=1'
+        url = 'http://115.com/'
         params = {
             'ct': 'file',
             'ac': 'userfile',
