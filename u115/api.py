@@ -73,7 +73,7 @@ class RequestHandler(object):
 
         :param request: a formatted request object
         :type request: :class:`.Request`
-        :param bool expect_json: if True, raise :class`.InvalidAPIAccess` if
+        :param bool expect_json: if True, raise :class:`.InvalidAPIAccess` if
             response is not in JSON format
         :param bool ignore_content: whether to ignore setting content of the
             Response object
@@ -90,7 +90,7 @@ class RequestHandler(object):
         """
         :param :class:`requests.Response` r: a response object of the Requests
             library
-        :param bool expect_json: if True, raise :class`.InvalidAPIAccess` if
+        :param bool expect_json: if True, raise :class:`.InvalidAPIAccess` if
             response is not in JSON format
         :param bool ignore_content: whether to ignore setting content of the
             Response object
