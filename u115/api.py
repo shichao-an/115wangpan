@@ -609,6 +609,15 @@ class API(object):
             'ac': 'space',
             '_': get_timestamp(13)
         }
+        _sign = os.environ.get('U115_BROWSER_SIGN')
+        if _sign is not None:
+            _time = os.environ.get('U115_BROWSER_TIME')
+            if _time is None:
+                msg = 'U115_BROWSER_TIME is required given U115_BROWSER_SIGN.'
+                raise APIError(msg)
+            params['sign'] = _sign
+            params['time'] = _time
+            params['uid'] = self.user_id
         req = Request(url=url, params=params)
         r = self.http.send(req)
         if r.state:
@@ -1527,9 +1536,14 @@ class Task(Base):
     @property
     def is_directory(self):
         """
-        :return: whether this task is associated with a directory
+        :return: whether this task is associated with a directory.
         :rtype: bool
         """
+        if self.cid is None:
+            msg = 'Cannot determine whether this task is a directory.'
+            if not self.is_transferred:
+                msg += ' This task has not been transferred.'
+            raise TaskError(msg)
         return self.api.downloads_directory.cid != self.cid
 
     @property
@@ -1726,7 +1740,7 @@ def _instantiate_task(api, kwargs):
     """Create a Task object from raw kwargs"""
     file_id = kwargs['file_id']
     kwargs['file_id'] = file_id if str(file_id).strip() else None
-    kwargs['cid'] = kwargs['file_id']
+    kwargs['cid'] = kwargs['file_id'] or None
     kwargs['rate_download'] = kwargs['rateDownload']
     kwargs['percent_done'] = kwargs['percentDone']
     kwargs['add_time'] = get_utcdatetime(kwargs['add_time'])

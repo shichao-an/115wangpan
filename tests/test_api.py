@@ -57,7 +57,7 @@ TEST_TARGET_URL2 = {
 TEST_UPLOAD_FILE = pjoin(DATA_DIR, '5781687.png')
 TEST_COOKIE_FILE = pjoin(DATA_DIR, '115cookies')
 TEST_DOWNLOAD_FILE = pjoin(DOWNLOADS_DIR, '5781687.png')
-TASK_TRANSFERRED_TIMEOUT = 60
+TASK_TRANSFERRED_TIMEOUT = 120
 TEST_NEW_DIRNAME = 'New Directory'
 TEST_EDIT_FILENAME = '5781687_modified.png'
 
@@ -87,20 +87,31 @@ def is_task_created(tasks, info_hash, is_directory=True):
         return False
 
 
-def wait_task_transferred(task):
+def wait_task_transferred(get_tasks, info_hash):
     """
+    :param get_task: function API.get_task
     Wait until a 'BEING TRANSFERRED' task transferred
     """
+    def get_task():
+        tasks = get_tasks()
+        for task in tasks:
+            if task.info_hash == info_hash:
+                return task
+        else:
+            raise Exception('Task is not found.')
     seconds = 0
-    if (task.status_human != 'TRANSFERRED' or
-            task.status_human == 'BEING TRANSFERRED'):
+    task = get_task()
+    if task.status_human == 'TRANSFERRED':
+        return
+    if (task.status_human != 'TRANSFERRED' and
+            task.status_human != 'BEING TRANSFERRED'):
         raise Exception('Task cannot be transferred.')
-    while (task.status_human == 'BEING TRANSFERRED' and
+    while (get_task().status_human == 'BEING TRANSFERRED' and
            seconds < TASK_TRANSFERRED_TIMEOUT):
         time.sleep(5)
         seconds += 5
-    if (seconds == TASK_TRANSFERRED_TIMEOUT and
-            task.status_human != 'TRANSFERRED'):
+    if (seconds >= TASK_TRANSFERRED_TIMEOUT and
+            get_task().status_human != 'TRANSFERRED'):
         raise Exception('Task transferred timeout.')
 
 
@@ -125,6 +136,7 @@ class TaskTests(TestCase):
         assert self.api.add_task_url(url1)
         assert self.api.add_task_url(url2)
         # Test count
+        time.sleep(5)
         tasks = self.api.get_tasks()
         assert len(tasks) == 4
         tasks = self.api.get_tasks(3)
@@ -174,6 +186,7 @@ class BitTorrentTaskTests(TestCase):
         filename = TEST_TORRENT1['filename']
         info_hash = TEST_TORRENT1['info_hash']
         assert self.api.add_task_bt(filename)
+        wait_task_transferred(self.api.get_tasks, info_hash)
         tasks = self.api.get_tasks()
         assert is_task_created(tasks, info_hash)
 
@@ -189,6 +202,7 @@ class BitTorrentTaskTests(TestCase):
         torrent.files[1].unselect()
         assert len(torrent.selected_files) == torrent.file_count - 2
         assert torrent.submit()
+        wait_task_transferred(self.api.get_tasks, info_hash)
         tasks = self.api.get_tasks()
         assert is_task_created(tasks, info_hash)
 
@@ -199,6 +213,7 @@ class BitTorrentTaskTests(TestCase):
         filename = TEST_TORRENT2['filename']
         info_hash = TEST_TORRENT2['info_hash']
         assert self.api.add_task_bt(filename)
+        wait_task_transferred(self.api.get_tasks, info_hash)
         tasks = self.api.get_tasks()
         is_task_created = False
         for task in tasks:
@@ -236,6 +251,7 @@ class URLTaskTests(TestCase):
         url = TEST_TARGET_URL1['url']
         info_hash = TEST_TARGET_URL1['info_hash']
         assert self.api.add_task_url(url)
+        wait_task_transferred(self.api.get_tasks, info_hash)
         tasks = self.api.get_tasks()
         is_task_created(tasks, info_hash, False)
 
@@ -246,6 +262,7 @@ class URLTaskTests(TestCase):
         url = TEST_TARGET_URL2['url']
         info_hash = TEST_TARGET_URL2['info_hash']
         assert self.api.add_task_url(url)
+        wait_task_transferred(self.api.get_tasks, info_hash)
         tasks = self.api.get_tasks()
         is_task_created(tasks, info_hash)
 
