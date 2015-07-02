@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.7.5 (2015-07-02)
+------------------
+
+- Added environs to make a "workaround" that deals with issue #27
+- Fixed Task.is_directory to include 'BEING TRANSFERRED' exception 
+
 0.7.4 (2015-06-20)
 ------------------
 
