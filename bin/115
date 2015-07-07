@@ -9,7 +9,7 @@ import os
 import sys
 from u115 import API, File, Directory, Task
 from u115 import __version__ as VERSION
-from u115.utils import mkdir_p, eval_path, PY3
+from u115.utils import mkdir_p, eval_path, PY3, utf8_encode
 from u115.conf import COOKIES_FILENAME
 from u115 import conf
 from homura import download
@@ -34,6 +34,14 @@ DRY_RUN = False
 FLAT = False
 SAVE_COOKIES = False
 CLI_API = None
+
+
+def print_msg(msg):
+    """Print UTF-8 encode byte-string"""
+    if not PY3:
+        print(utf8_encode(msg))
+    else:
+        print(msg)
 
 
 def fix_argv():
@@ -170,7 +178,7 @@ def get_entries(entry_num, sub_num,
         if not FLAT:
             directory = entry.name
             if DRY_RUN:
-                print('DRY RUN: creating directory "%s"...' % directory)
+                print_msg('DRY RUN: creating directory "%s"...' % directory)
             else:
                 mkdir_p(directory)
         if sub_num == '*':
@@ -232,7 +240,7 @@ def download_file(f, path=None):
             else:
                 dpath = os.path.join(path, f.name)
             if DRY_RUN:
-                print('DRY RUN: creating directory "%s"...' % dpath)
+                print_msg('DRY RUN: creating directory "%s"...' % dpath)
             else:
                 mkdir_p(dpath)
         # Here we list all entries (f.count)
