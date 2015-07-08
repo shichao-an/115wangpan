@@ -64,6 +64,8 @@ def parse_args():
     pu = subparsers.add_parser('up')
     pd.add_argument('-f', '--flat', action='store_true',
                     help="flatten directory structure")
+    pd.add_argument('-F', '--files-only', action='store_true',
+                    help="show files only")
     pd.add_argument('entry_num', nargs='?', help='entry number',
                     type=int)
     pd.add_argument(
@@ -95,6 +97,9 @@ def parse_args():
             if args.entry_num <= 0:
                 msg = 'Entry number must be a positive integer.'
                 raise parser.error(msg)
+        if args.entry_num is not None and args.sub_num is not None:
+            msg = 'Cannot specify sub-entries with --files-only option.'
+            raise parser.error(msg)
         if args.sub_num is not None:
             args.sub_num = parse_sub_num(args.sub_num, parser)
     return args
@@ -130,12 +135,13 @@ def init_api(username, password, section):
 
 
 def get_entries(entry_num, sub_num,
-                count, sub_count, list_tasks=False):
+                count, sub_count, list_tasks=False, files_only=False):
     api = CLI_API
+    show_dir = not files_only
     if list_tasks is True:
-        entries = api.get_tasks(count)
+        entries = api.get_tasks(count=count, show_dir=show_dir)
     else:
-        entries = api.downloads_directory.list(count)
+        entries = api.downloads_directory.list(count=count, show_dir=show_dir)
     # List all entries
     if entry_num is None:
         for k, entry in enumerate(entries, start=1):
@@ -349,7 +355,7 @@ def main():
         DRY_RUN = args.dry_run
         FLAT = args.flat
         get_entries(args.entry_num, args.sub_num, args.count, args.sub_count,
-                    args.tasks)
+                    args.tasks, args.files_only)
     elif args.subparser_name == 'up':
         add_new_task(args)
 
