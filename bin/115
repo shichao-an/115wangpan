@@ -106,8 +106,9 @@ def parse_args():
                 msg = 'Entry number must be a positive integer.'
                 raise parser.error(msg)
         if args.entry_num is not None and args.sub_num is not None:
-            msg = 'Cannot specify sub-entries with --files-only option.'
-            raise parser.error(msg)
+            if args.files_only is True:
+                msg = 'Cannot specify sub-entries with --files-only option.'
+                raise parser.error(msg)
         if args.sub_num is not None:
             args.sub_num = parse_sub_num(args.sub_num, parser)
     return args
