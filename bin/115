@@ -148,7 +148,7 @@ def get_entries(entry_num, sub_num,
     api = CLI_API
     show_dir = not files_only
     if list_tasks is True:
-        entries = api.get_tasks(count=count, show_dir=show_dir)
+        entries = api.get_tasks(count=count)
     else:
         entries = api.downloads_directory.list(count=count, show_dir=show_dir)
     # List all entries
