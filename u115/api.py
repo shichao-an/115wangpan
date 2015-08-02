@@ -1513,7 +1513,7 @@ class Task(Base):
 
     def __init__(self, api, add_time, file_id, info_hash, last_update,
                  left_time, move, name, peers, percent_done, rate_download,
-                 size, status, cid, pid):
+                 size, status, cid, pid, url, *args, **kwargs):
         self.api = api
         self.cid = cid
         self.name = name
@@ -1529,6 +1529,7 @@ class Task(Base):
         self.size = size
         self.size_human = humanize.naturalsize(size, binary=True)
         self.status = status
+        self.url = url
         self._directory = None
         self._deleted = False
         self._count = -1
@@ -1752,6 +1753,11 @@ def _instantiate_task(api, kwargs):
         kwargs['pid'] = None
     del kwargs['rateDownload']
     del kwargs['percentDone']
+    if 'url' in kwargs:
+        if not kwargs['url']:
+            kwargs['url'] = None
+    else:
+        kwargs['url'] = None
     task = Task(api, **kwargs)
     if is_transferred:
         task._parent = api.downloads_directory
