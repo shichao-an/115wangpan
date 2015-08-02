@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.7.6 (2015-08-01)
+------------------
+
+- Fixed DRY_RUN message print by using print_msg that handles PY2 and PY3 strings
+- Added -F/--files-only option to 115 down
+- Fixed files_only parse error
+- Fixed unexpected kwargs for get_tasks
+- Fixed Task against added 'url' attr
+
 0.7.5 (2015-07-02)
 ------------------
 
